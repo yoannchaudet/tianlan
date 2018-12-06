@@ -1,5 +1,7 @@
-# Customize prompt
 function prompt() {
+  <#
+  .SYNOPSIS Define a custom prompt.
+  #>
   Write-Host 'tianlan>' -ForegroundColor 'Yellow' -NoNewline
   ' '
 }

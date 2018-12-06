@@ -36,7 +36,10 @@ New-Item -ItemType 'Directory' -Path $hostProfile -Force | Out-Null
 
 # Build the image
 $imageName = 'tianlan:local'
-& $docker build $PSScriptRoot -t $imageName
+& $docker build $PSScriptRoot -t $imageName | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  throw "Shell image build failed"
+}
 
 # Start the image (or shell)
 $scriptsFolder = Join-Path $PSScriptRoot 'Scripts'
