@@ -12,10 +12,6 @@ Set-StrictMode -version 'Latest'
 $ErrorActionPreference = 'Stop'
 
 #
-# Utilities
-#
-
-#
 # Main
 #
 
@@ -24,7 +20,7 @@ $hostProfile = (Join-Path $env:USERPROFILE '.tianlan')
 New-Item -ItemType 'Directory' -Path $hostProfile -Force | Out-Null
 
 # Get the scripts folder
-$scriptsFolder = Join-Path $PSScriptRoot 'Scripts'
+$scriptsFolder = Join-Path $PSScriptRoot 'src'
 
 switch ($Mode) {
 
@@ -36,7 +32,7 @@ switch ($Mode) {
     $promptCopy = Get-Content function:\prompt
     try {
       # Start the shell
-      & $pwsh -NoExit -Command ". $(Join-Path $scriptsFolder 'Shell.ps1')"
+      & $pwsh -NoExit -Command ". $(Join-Path $scriptsFolder 'Tianlan.profile.ps1')"
     } finally {
       # Restore the prompt
       Set-Content function:\prompt $promptCopy
@@ -57,7 +53,7 @@ switch ($Mode) {
     # Start the image (or shell)
     & $docker run `
       --volume ${hostProfile}:/root/.tianlan `
-      --volume ${scriptsFolder}:/tianlan/Scripts `
+      --volume ${scriptsFolder}:/tianlan/src `
       --rm -it $imageName
   }
 }

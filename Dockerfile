@@ -10,4 +10,4 @@ RUN Install-Module -Name 'Az' -Force
 WORKDIR /tianlan
 
 # Set entrypoint
-ENTRYPOINT ["pwsh", "-NoExit", "-Command", ". /tianlan/Scripts/Shell.ps1"]
+ENTRYPOINT ["pwsh", "-NoExit", "-Command", ". /tianlan/src/Tianlan.profile.ps1"]
