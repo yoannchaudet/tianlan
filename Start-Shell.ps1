@@ -56,7 +56,7 @@ switch ($Mode) {
 
     # Start the image (or shell)
     & $docker run `
-      --volume ${hostProfile}:/tianlan/.profile `
+      --volume ${hostProfile}:/root/.tianlan `
       --volume ${scriptsFolder}:/tianlan/Scripts `
       --rm -it $imageName
   }

@@ -7,4 +7,5 @@ function prompt() {
 }
 
 # Set history location
-Set-PSReadlineOption -HistorySavePath '/tianlan/.profile/history'
+$profileLocation = Resolve-Path '~/.tianlan'
+Set-PSReadlineOption -HistorySavePath (Join-Path $profileLocation 'history')
