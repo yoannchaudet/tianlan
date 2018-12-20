@@ -1,5 +1,6 @@
 <#
-.SYNOPSIS Profile file for the Tianlan shell.
+.SYNOPSIS
+Profile file for the Tianlan shell.
 #>
 
 function prompt() {
@@ -14,3 +15,6 @@ function prompt() {
 # Set custom history location
 $profileLocation = Resolve-Path '~/.tianlan'
 Set-PSReadlineOption -HistorySavePath (Join-Path $profileLocation 'history')
+
+# Import the module
+Import-Module -Name (Join-Path $PSScriptRoot 'Tianlan.psd1')

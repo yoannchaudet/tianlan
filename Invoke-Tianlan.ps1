@@ -1,9 +1,20 @@
 #!/usr/bin/env pwsh
 #Requires -version 5.0
 
+<#
+.SYNOPSIS
+Invoke Tianlan in a dedicated shell.
+
+.PARAMETER Mode
+The mode in which to start the shell:
+
+- Host, run a regular shell (in a dedicated pwsh session)
+- Docker, run the shell in a Docker container (self-contained)
+#>
+
 param (
   [string]
-  [Parameter(Mandatory=$false)]
+  [Parameter(Mandatory = $false)]
   [ValidateSet('Host', 'Docker')] $Mode = 'Host'
 )
 
@@ -33,7 +44,8 @@ switch ($Mode) {
     try {
       # Start the shell
       & $pwsh -NoExit -Command ". $(Join-Path $scriptsFolder 'Tianlan.profile.ps1')"
-    } finally {
+    }
+    finally {
       # Restore the prompt
       Set-Content function:\prompt $promptCopy
     }
