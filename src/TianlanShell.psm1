@@ -15,11 +15,26 @@ function Invoke-Tianlan {
 
   - Host, run a regular shell (in a dedicated pwsh session)
   - Docker, run the shell in a Docker container (self-contained)
+
+  .PARAMETER DeploymentPath
+  Deployment folder where Manifest.json file, templates and generally all
+  files that can be customized are located.
+
+  Set to current location if not provided.
   #>
 
   param (
-    [string] [ValidateSet('Host', 'Docker')] $Mode = 'Host'
+    [string] [ValidateSet('Host', 'Docker')] $Mode = 'Host',
+    [string] $DeploymentPath
   )
+
+  # Initialize deployment path if needed and validate it
+  if (!$DeploymentPath) {
+    $DeploymentPath = Get-Location
+  }
+  if (!(Test-Path -LiteralPath $DeploymentPath -PathType 'Container')) {
+    throw "Provided deployment path ($DeploymentPath) does not exist or is not a folder"
+  }
 
   # Create folder to store the container's userprofile
   $hostProfile = (Join-Path $env:USERPROFILE '.tianlan')
@@ -38,7 +53,7 @@ function Invoke-Tianlan {
       $promptCopy = Get-Content function:\prompt
       try {
         # Start the shell
-        & $pwsh -NoExit -Command ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1')"
+        & $pwsh -NoExit -Command ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1') -DeploymentPath $DeploymentPath"
       }
       finally {
         # Restore the prompt
@@ -61,6 +76,7 @@ function Invoke-Tianlan {
       & $docker run `
         --volume ${hostProfile}:/root/.tianlan `
         --volume ${moduleFolder}:/tianlan/module `
+        --volume ${DeploymentPath}:/tianlan/deployment `
         --rm -it $imageName
     }
   }

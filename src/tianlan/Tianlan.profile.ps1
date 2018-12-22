@@ -1,7 +1,18 @@
 <#
 .SYNOPSIS
 Profile file for the Tianlan shell.
+
+.PARAMETER DeploymentPath
+Deployment folder where Manifest.json file, templates and generally all
+files that can be customized are located.
 #>
+
+param (
+  [string] $DeploymentPath
+)
+
+# Expose deployment path
+$global:DeploymentPath = $DeploymentPath
 
 function prompt() {
   <#
