@@ -18,9 +18,7 @@ function Invoke-Tianlan {
   #>
 
   param (
-    [string]
-    [Parameter(Mandatory = $false)]
-    [ValidateSet('Host', 'Docker')] $Mode = 'Host'
+    [string] [ValidateSet('Host', 'Docker')] $Mode = 'Host'
   )
 
   # Create folder to store the container's userprofile
