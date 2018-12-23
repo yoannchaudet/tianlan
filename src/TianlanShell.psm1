@@ -4,6 +4,20 @@
 Set-StrictMode -version 'Latest'
 $ErrorActionPreference = 'Stop'
 
+function ConvertTo-Base64 {
+  <#
+  .SYNOPSIS
+  Convert a string to its base64 reprensentation.
+  .PARAMETER InputValue
+  The value to convert.
+  #>
+  param (
+    [Parameter(Mandatory=$true)]
+    [string] $InputValue
+  )
+  [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($InputValue))
+}
+
 function Invoke-Tianlan {
 
   <#
@@ -21,11 +35,15 @@ function Invoke-Tianlan {
   files that can be customized are located.
 
   Set to current location if not provided.
+
+  .PARAMETER Command
+  An optional command to run. When provided the shell exits upon completion
   #>
 
   param (
     [string] [ValidateSet('Host', 'Docker')] $Mode = 'Host',
-    [string] $DeploymentPath
+    [string] $DeploymentPath,
+    [string] $Command
   )
 
   # Initialize deployment path if needed and validate it
@@ -43,22 +61,35 @@ function Invoke-Tianlan {
   # Get the module folder
   $moduleFolder = Join-Path $PSScriptRoot 'tianlan'
 
+  # Prepare args for the pwsh command to run
+  $args = @('-NoProfile')
+  if (!$Command) {
+    $args += '-NoExit'
+  }
+  if ($Mode -eq 'Host') {
+    $args += @('-EncodedCommand', "$(ConvertTo-Base64 ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1')")")
+  } else {
+    $args += @('-EncodedCommand', "$(ConvertTo-Base64 ". /tianlan/module/Tianlan.profile.ps1")")
+  }
+
+  # Prepare environment
+  if ($Command) {
+    $env:Command = ConvertTo-Base64 $Command
+  } else {
+    $env:Command = ''
+  }
+
   # Invoke the requested mode
   switch ($Mode) {
     'Host' {
       # Lookup pwsh
       $pwsh = (Get-Command -Name 'pwsh').Source
 
-      # Copy the current prompt
-      $promptCopy = Get-Content function:\prompt
-      try {
-        # Start the shell
-        & $pwsh -NoProfile -NoExit -Command ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1') -DeploymentPath $DeploymentPath"
-      }
-      finally {
-        # Restore the prompt
-        Set-Content function:\prompt $promptCopy
-      }
+      # Prepare environment
+      $env:DeploymentPath = ConvertTo-Base64 $DeploymentPath
+
+      # Start the shell
+      & $pwsh $args
     }
 
     'Docker' {
@@ -77,7 +108,9 @@ function Invoke-Tianlan {
         --volume ${hostProfile}:/root/.tianlan `
         --volume ${moduleFolder}:/tianlan/module `
         --volume ${DeploymentPath}:/tianlan/deployment `
-        --rm -it $imageName
+        -e DeploymentPath=$(ConvertTo-Base64 /tianlan/deployment) `
+        -e Command=$env:Command `
+        --rm -it $imageName $args
     }
   }
 }
