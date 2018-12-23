@@ -8,14 +8,19 @@ function ConvertTo-Base64 {
   <#
   .SYNOPSIS
   Convert a string to its base64 reprensentation.
+
   .PARAMETER InputValue
   The value to convert.
+
+  .PARAMETER Encoding
+  Use UTF8 by default. Pwsh when encoding commands expects "Unicode" to be used somehow.
   #>
   param (
     [Parameter(Mandatory=$true)]
-    [string] $InputValue
+    [string] $InputValue,
+    [String] $Encoding = 'UTF8'
   )
-  [Convert]::ToBase64String([System.Text.Encoding]::Unicode.GetBytes($InputValue))
+  [System.Convert]::ToBase64String([System.Text.Encoding]::${Encoding}.GetBytes($InputValue))
 }
 
 function Invoke-Tianlan {
@@ -67,9 +72,9 @@ function Invoke-Tianlan {
     $args += '-NoExit'
   }
   if ($Mode -eq 'Host') {
-    $args += @('-EncodedCommand', "$(ConvertTo-Base64 ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1')")")
+    $args += @('-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1')")")
   } else {
-    $args += @('-EncodedCommand', "$(ConvertTo-Base64 ". /tianlan/module/Tianlan.profile.ps1")")
+    $args += @('-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode ". /tianlan/module/Tianlan.profile.ps1")")
   }
 
   # Prepare environment

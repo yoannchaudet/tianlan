@@ -14,14 +14,15 @@ Excepts the following environment variables:
 #>
 
 # Expose deployment path
-$global:DeploymentPath = [System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($env:DeploymentPath))
+$global:DeploymentPath = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:DeploymentPath))
+
 
 # Import the module
 Import-Module -Name (Join-Path $PSScriptRoot 'Tianlan.psd1')
 
 # Invoke the command
 if ($env:Command) {
-  Invoke-Expression -Command ([System.Text.Encoding]::Unicode.GetString([Convert]::FromBase64String($env:Command)))
+  Invoke-Expression -Command ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:Command)))
 }
 
 # Prepare interactive shell

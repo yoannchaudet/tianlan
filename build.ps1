@@ -26,8 +26,8 @@ $ErrorActionPreference = 'Stop'
 function Import-Modules() {
   Remove-Module -Name 'TianlanShell' -Force -ErrorAction 'SilentlyContinue'
   Remove-Module -Name 'Tianlan' -Force -ErrorAction 'SilentlyContinue'
-  Import-Module -Name (Join-Path $pwd 'src/TianlanShell.psd1')
-  Import-Module -Name (Join-Path $pwd 'src/tianlan/Tianlan.psd1')
+  Import-Module -Name (Join-Path $PSScriptRoot 'src/TianlanShell.psd1')
+  Import-Module -Name (Join-Path $PSScriptRoot 'src/tianlan/Tianlan.psd1')
 }
 
 # Switch task
