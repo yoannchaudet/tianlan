@@ -2,10 +2,10 @@
 Set-StrictMode -version 'Latest'
 $ErrorActionPreference = 'Stop'
 
-# Dot-source all the files
+# Dot-source all the files (outside the tests)
 foreach ($folderName in @('Private', 'Public')) {
   $path = Join-Path (Join-Path $PSScriptRoot $folderName) '*.ps1'
-  foreach ($file in @(Get-ChildItem -Path $path)) {
+  foreach ($file in @(Get-ChildItem -Path $path -Exclude '*.Tests.ps1')) {
     try {
       . $file.FullName
     } catch {

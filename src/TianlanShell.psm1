@@ -53,7 +53,7 @@ function Invoke-Tianlan {
       $promptCopy = Get-Content function:\prompt
       try {
         # Start the shell
-        & $pwsh -NoExit -Command ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1') -DeploymentPath $DeploymentPath"
+        & $pwsh -NoProfile -NoExit -Command ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1') -DeploymentPath $DeploymentPath"
       }
       finally {
         # Restore the prompt

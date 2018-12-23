@@ -16,9 +16,10 @@ For dependencies, two solutions:
 2. Install the dependencies one by one (this is preferred if you are contributing to the project):
 
    - Az 1.0.0
+   - Pester 4.4.3+
    - WIP: Add link, manage this differently
 
-## Getting started
+## Getting started: run the shell
 
 Tiānlán is packaged as a PowerShell module which exposes a single function: `Invoke-Tianlan`.
 
@@ -30,9 +31,16 @@ In order to start the shell (from the root of the repository):
 
 ``` PS
 # Start the shell in a container:
-Import-Module ./src/TianlanShell.psd1; Invoke-Tianlan -Mode Docker
+./build.ps1 Import; Invoke-Tianlan -Mode Docker
 
 # To start the shell on the host directly:
-Import-Module ./src/TianlanShell.psd1 ; Invoke-Tianlan
+./build.ps1 Import; Invoke-Tianlan
 ```
 
+## Run unit tests
+
+From the root of the repository:
+
+``` PS
+./build.ps1 Test
+```
