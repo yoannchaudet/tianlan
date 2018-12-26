@@ -44,18 +44,47 @@ function Get-Manifest {
   <#
   .SYNOPSIS
   Return the current Manifest.json file.
+
+  .PARAMETER Filters
+  Optional string array of properties to follow in the Manifest.
+  When provided, returns the matching property if possible.
+
+  .PARAMETER DefaultValue
+  When Filters is provided, set the value to return in case the filter
+  fails. Default to null.
   #>
+
+  param (
+    [Parameter(Position=0, ValueFromRemainingArguments = $true)]
+    [string[]] $Filters,
+    [object] $DefaultValue = $null
+  )
 
   # Get the manifest file path
   $manifestFile = Join-DeploymentPath 'Manifest.json' -SkipValidation
 
   # Parse the manifest
   if (Test-Path $manifestFile) {
-    Get-Content -Raw -Path $manifestFile | ConvertFrom-Json
+    $manifest = Get-Content -Raw -Path $manifestFile | ConvertFrom-Json
   }
 
   # Return a default (empty) manifest
   else {
-    Get-DefaultManifest
+    $manifest = Get-DefaultManifest
   }
+
+  # Select requested part of the manifest (if needed)
+  if ($Filters) {
+    foreach ($segment in $Filters) {
+      if ($manifest -and $manifest.psobject.Properties[$segment]) {
+        $manifest = $manifest.$segment
+      } else {
+        $manifest = $DefaultValue
+        break
+      }
+    }
+  }
+
+  # Return the manifest
+  return $manifest
 }
