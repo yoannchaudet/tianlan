@@ -55,7 +55,7 @@ function Get-Manifest {
   #>
 
   param (
-    [Parameter(Position=0, ValueFromRemainingArguments = $true)]
+    [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
     [string[]] $Filters,
     [object] $DefaultValue = $null
   )
@@ -65,7 +65,7 @@ function Get-Manifest {
 
   # Parse the manifest
   if (Test-Path $manifestFile) {
-    $manifest = Get-Content -Raw -Path $manifestFile | ConvertFrom-Json
+    $manifest = Get-Content -Raw -Path $manifestFile -Encoding 'UTF8' | ConvertFrom-Json
   }
 
   # Return a default (empty) manifest
@@ -78,7 +78,8 @@ function Get-Manifest {
     foreach ($segment in $Filters) {
       if ($manifest -and $manifest.psobject.Properties[$segment]) {
         $manifest = $manifest.$segment
-      } else {
+      }
+      else {
         $manifest = $DefaultValue
         break
       }
@@ -87,4 +88,37 @@ function Get-Manifest {
 
   # Return the manifest
   return $manifest
+}
+
+function Set-Manifest {
+  <#
+  .SYNOPSIS
+  Update the content of the Manifest.json file.
+
+  .PARAMETER Content
+  The content to set. Note: no validation is executed.
+
+  Supported types: string, psobject, hashtable.
+  #>
+
+  param (
+    [Parameter(Mandatory = $true)]
+    [object] $Content
+  )
+
+  # Get path of the manifest file
+  $manifestPath = Join-DeploymentPath 'Manifest.json' -SkipValidation
+
+  # Parse string as json (does syntax validation and reformatting when written in the file)
+  if ($Content -is [string]) {
+    $Content = $Content | ConvertFrom-Json
+  }
+
+  # Output the file
+  if ($Content -is [psobject] -or $Content -is [hashtable]) {
+    $Content | ConvertTo-Json | Out-File -FilePath $manifestPath -Encoding 'UTF8'
+  }
+  else {
+    throw 'Unsupported content type'
+  }
 }
