@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-#Requires -version 6
+#Requires -Version 6.1 -Modules @{ ModuleName='Pester'; ModuleVersion='4.4.3' }
 
 <#
 .SYNOPSIS
@@ -11,7 +11,7 @@ The task to run.
 - Build, not implemented
 - Test, run unit tests
 - Import, import the two modules (TianlanShell and Tianlan) in the
-  current session
+  current session (useful during development)
 #>
 
 param (

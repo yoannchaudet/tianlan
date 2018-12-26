@@ -12,10 +12,10 @@
 RootModule = 'TianlanShell.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '0.0.0'
 
 # Supported PSEditions
-# CompatiblePSEditions = @()
+CompatiblePSEditions = @('Core')
 
 # ID used to uniquely identify this module
 GUID = 'ee5c189e-f916-4ff3-ad73-c4fd718bf222'
@@ -33,7 +33,7 @@ Copyright = '(c) 2018 Yoann Chaudet. All rights reserved.'
 # Description = ''
 
 # Minimum version of the Windows PowerShell engine required by this module
-# PowerShellVersion = ''
+PowerShellVersion = '6.1'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''

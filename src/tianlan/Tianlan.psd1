@@ -12,7 +12,7 @@
 RootModule = 'Tianlan.psm1'
 
 # Version number of this module.
-ModuleVersion = '0.0.1'
+ModuleVersion = '0.0.0'
 
 # Supported PSEditions
 CompatiblePSEditions = @('Core')
@@ -33,7 +33,7 @@ Copyright = '(c) 2018 Yoann Chaudet. All rights reserved.'
 # Description = ''
 
 # Minimum version of the Windows PowerShell engine required by this module
-# PowerShellVersion = ''
+PowerShellVersion = '6.1'
 
 # Name of the Windows PowerShell host required by this module
 # PowerShellHostName = ''
