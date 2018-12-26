@@ -44,3 +44,11 @@ From the root of the repository:
 ``` PS
 ./build.ps1 Test
 ```
+
+Run unit tests for a single file:
+
+``` PS
+./build.ps1 Test -Parameters @{ Path = 'src/tianlan/Private/Manifest.Tests.ps1' }
+```
+
+The `Parameters` hashtable is passed directly to [Invoke-Pester](https://github.com/pester/Pester/wiki/Invoke-Pester) (the entry point to the test framework we use).
