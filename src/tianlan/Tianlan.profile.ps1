@@ -31,7 +31,9 @@ else {
     .SYNOPSIS Define a custom prompt.
     #>
 
-    Write-Host 'tianlan>' -NoNewline
+    Write-Host 'tianlan' -NoNewline
+    if ($global:TIANLIN_AUTHCONTEXT) { Write-Host " $global:TIANLIN_AUTHCONTEXT" -NoNewline }
+    Write-Host '>' -NoNewline
     ' '
   }
 
