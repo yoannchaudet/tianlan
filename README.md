@@ -15,8 +15,9 @@ For dependencies, two solutions:
 
 2. Install the dependencies one by one (this is preferred if you are contributing to the project):
 
-   - Az 1.0.0
-   - Pester 4.4.3+
+   - Pester 4.4.3+ (for tests only)
+   - Az 1.0.0 (for runtime)
+   - SelfSignedCertificate 0.0.4 (for runtime)
    - WIP: Add link, manage this differently
 
 ## Getting started: run the shell

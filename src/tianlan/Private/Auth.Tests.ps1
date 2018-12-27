@@ -98,4 +98,40 @@ InModuleScope Tianlan {
       }
     }
   }
+
+  Describe 'New-RandomPassword' {
+    It 'Produces random passwords (same length)' {
+      $p1 = New-RandomPassword
+      $p2 = New-RandomPassword
+      $p1.Length | Should -Be 16
+      $p2.Length | Should -Be 16
+      $p1 | Should -Not -Be $p2
+    }
+
+    It 'Produces passwords of arbirary lengths' {
+      (New-RandomPassword -Length 5).Length | Should -Be 5
+      (New-RandomPassword -Length 64).Length | Should -Be 64
+    }
+
+    It 'Returns a secure string if requested' {
+      New-RandomPassword -AsSecureString | Should -BeOfType [securestring]
+    }
+  }
+
+  Describe 'New-Certificate, Remove-Certificate' {
+    It 'Generates/removes new certificates' {
+      # Try to create a new cert
+      $certificate = New-Certificate -CommonName 'test'
+      $certificate | Should -Not -BeNull
+
+      # Get an invalid cert
+      Get-Certificate 'x' | Should -BeNull
+
+      # Try to retrieve valid cert
+      $certificate2 = Get-Certificate -Thumbprint $certificate.Thumbprint
+      $certificate2.Thumbprint | Should -Be $certificate.Thumbprint
+      $certificate2.SubjectName.Name | Should -Be $certificate.SubjectName.Name
+      $certificate2.HasPrivateKey | Should -Be $true
+    }
+  }
 }
