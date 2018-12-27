@@ -1,15 +1,15 @@
 Describe 'Invoke-Tianlan' {
   It 'Propagates default deployment path (mode = Host)' {
-    Invoke-Tianlan -Mode 'Host' -Command '$global:DeploymentPath | Out-String' | Should -Not -BeNullOrEmpty
+    Invoke-Tianlan -Mode 'Host' -Command 'Get-DeploymentPath | Out-String' | Should -Not -BeNullOrEmpty
   }
 
   It 'Propagates custom deployment path (mode = Host)' {
-    Invoke-Tianlan -Mode 'Host' -DeploymentPath $env:TEMP -Command '$global:DeploymentPath' `
+    Invoke-Tianlan -Mode 'Host' -DeploymentPath $env:TEMP -Command 'Get-DeploymentPath' `
       | Should -Contain $env:TEMP
   }
 
   It 'Propagates custom deployment path (mode = Docker)' {
-    (Invoke-Tianlan -Mode 'Docker' -DeploymentPath $env:TEMP -Command '$global:DeploymentPath').Contains('/tianlan/deployment') `
+    (Invoke-Tianlan -Mode 'Docker' -DeploymentPath $env:TEMP -Command 'Get-DeploymentPath').Contains('/tianlan/deployment') `
       | Should -BeTrue
   }
 

@@ -13,12 +13,11 @@ Excepts the following environment variables:
   When provided the shell exits directly.
 #>
 
-# Expose deployment path
-$global:DeploymentPath = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:DeploymentPath))
-
-
 # Import the module
 Import-Module -Name (Join-Path $PSScriptRoot 'Tianlan.psd1')
+
+# Set the deployment path
+Set-DeploymentPath ([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:DeploymentPath)))
 
 # Invoke the command
 if ($env:Command) {
