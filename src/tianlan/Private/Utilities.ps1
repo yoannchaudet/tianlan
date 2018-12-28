@@ -20,7 +20,7 @@ function Invoke-Retry {
   #>
 
   param (
-    [Parameter(Mandatory = $True)]
+    [Parameter(Mandatory)]
     [scriptblock] $ScriptBlock,
     [hashtable] $Parameters = @{},
     [int] $MaxRetries = 2,

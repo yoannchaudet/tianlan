@@ -23,11 +23,11 @@ function New-Environment {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $Name,
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $SubscriptionId,
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $Location
   )
 

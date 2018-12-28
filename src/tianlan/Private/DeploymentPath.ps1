@@ -11,7 +11,7 @@ function Join-DeploymentPath {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $Path,
     [switch] $SkipValidation
   )

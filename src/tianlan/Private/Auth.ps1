@@ -11,7 +11,7 @@ function Connect-Azure {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $SubscriptionId
   )
 
@@ -113,7 +113,7 @@ function New-Certificate {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $CommonName
   )
 
@@ -161,7 +161,7 @@ function Get-Certificate {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $Thumbprint
   )
 
@@ -193,7 +193,7 @@ function Remove-Certificate {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $Thumbprint
   )
 
@@ -230,7 +230,7 @@ function New-ServicePrincipal {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [string] $DisplayName
   )
 

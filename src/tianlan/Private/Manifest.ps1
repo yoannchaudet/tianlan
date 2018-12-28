@@ -73,7 +73,7 @@ function Set-Manifest {
   #>
 
   param (
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory)]
     [object] $Content
   )
 
