@@ -179,3 +179,37 @@ function Get-Certificate {
     return $certificates[0]
   }
 }
+
+function Remove-Certificate {
+  <#
+  .SYNOPSIS
+  Remove a certificate (from the certstore) by thumbprint.
+
+  Return a boolean indicating if the certificate was removed.
+
+  .PARAMETER Thumbprint
+  The certificate's thumbprint.
+  #>
+
+  param (
+    [Parameter(Mandatory = $true)]
+    [string] $Thumbprint
+  )
+
+  # Get the certificate
+  $certificate = Get-Certificate $Thumbprint
+  if (!$certificate) {
+    return $false
+  }
+
+  # Update the certstore
+  $storeName = [System.Security.Cryptography.X509Certificates.StoreName]
+  $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]
+  $openFlags = [System.Security.Cryptography.X509Certificates.OpenFlags]
+  $findType = [System.Security.Cryptography.X509Certificates.X509FindType]
+  $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName::My, $storeLocation::CurrentUser)
+  $store.Open($openFlags::ReadWrite)
+  $store.Remove($certificate)
+  $store.Close()
+  return $true
+}

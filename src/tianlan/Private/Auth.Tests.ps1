@@ -118,20 +118,27 @@ InModuleScope Tianlan {
     }
   }
 
-  Describe 'New-Certificate, Remove-Certificate' {
-    It 'Generates/removes new certificates' {
+  Describe 'New-Certificate, Get-Certificate, Remove-Certificate' {
+    It 'Generates/gets/removes certificates' {
       # Try to create a new cert
       $certificate = New-Certificate -CommonName 'test'
-      $certificate | Should -Not -BeNull
+      try {
+        $certificate | Should -Not -BeNull
 
-      # Get an invalid cert
-      Get-Certificate 'x' | Should -BeNull
+        # Get an invalid cert
+        Get-Certificate 'x' | Should -BeNull
+        Remove-Certificate 'x' | Should -BeFalse
 
-      # Try to retrieve valid cert
-      $certificate2 = Get-Certificate -Thumbprint $certificate.Thumbprint
-      $certificate2.Thumbprint | Should -Be $certificate.Thumbprint
-      $certificate2.SubjectName.Name | Should -Be $certificate.SubjectName.Name
-      $certificate2.HasPrivateKey | Should -Be $true
+        # Try to retrieve valid cert
+        $certificate2 = Get-Certificate -Thumbprint $certificate.Thumbprint
+        $certificate2.Thumbprint | Should -Be $certificate.Thumbprint
+        $certificate2.SubjectName.Name | Should -Be $certificate.SubjectName.Name
+        $certificate2.HasPrivateKey | Should -Be $true
+      }
+      finally {
+        # Try to remove the certificate
+        Remove-Certificate $certificate.Thumbprint | Should -BeTrue
+      }
     }
   }
 }
