@@ -36,7 +36,8 @@ function Connect-Azure {
 
       # Connect if needed
       if ($requiresConnect) {
-        $context = Connect-AzAccount -Subscription $SubscriptionId
+        Connect-AzAccount -Subscription $SubscriptionId | Out-Null
+        $context = Get-AzContext
         if ($context.Subscription.Id -ne $SubscriptionId) {
           throw 'Unable to connect for requested subscription'
         }
@@ -139,7 +140,7 @@ function New-Certificate {
     $x509Certificate2 = [System.Security.Cryptography.X509Certificates.X509Certificate2]
     $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName::My, $storeLocation::CurrentUser)
     $store.Open($openFlags::ReadWrite)
-    $store.Add($x509Certificate2::New($certPath, $certPassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable))
+    $store.Add($x509Certificate2::New($certPath, $certPassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet))
     $store.Close()
   }
   finally {
@@ -206,10 +207,46 @@ function Remove-Certificate {
   $storeName = [System.Security.Cryptography.X509Certificates.StoreName]
   $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]
   $openFlags = [System.Security.Cryptography.X509Certificates.OpenFlags]
-  $findType = [System.Security.Cryptography.X509Certificates.X509FindType]
   $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName::My, $storeLocation::CurrentUser)
   $store.Open($openFlags::ReadWrite)
   $store.Remove($certificate)
   $store.Close()
   return $true
+}
+
+function New-ServicePrincipal {
+  <#
+  .SYNOPSIS
+  Create a new service principal.
+
+  .DESCRIPTIOn
+  Create a new service principal (along with a self-sign certificate) and return a reference object
+  with the following properties:
+  - Certificate
+  - ServicePrincipal
+
+  .PARAMETER DisplayName
+  The display name.
+  #>
+
+  param (
+    [Parameter(Mandatory = $true)]
+    [string] $DisplayName
+  )
+
+  # Create a new certificate
+  $certificate = New-Certificate -CommonName $DisplayName
+
+  # Create a new service principal
+  $servicePrincipal = New-AzADServicePrincipal `
+    -DisplayName $DisplayName `
+    -CertValue ([System.Convert]::ToBase64String($certificate.GetRawCertData())) `
+    -StartDate $certificate.NotBefore `
+    -EndDate $certificate.NotAfter
+
+  # Return a reference object
+  return @{
+    Certificate      = $certificate
+    ServicePrincipal = $servicePrincipal
+  }
 }

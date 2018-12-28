@@ -6,7 +6,8 @@ function Get-DefaultManifest {
 
   # Return a default (empty) manifest file
   '{
-    "servicePrincipals": {}
+    "servicePrincipals": {},
+    "environments": {}
   }' | ConvertFrom-Json
 }
 
@@ -46,7 +47,7 @@ function Get-Manifest {
   # Select requested part of the manifest (if needed)
   if ($Filters) {
     foreach ($segment in $Filters) {
-      if ($manifest -and $manifest.psobject.Properties[$segment]) {
+      if ($manifest -and $manifest.psobject.Properties[$segment] -and $manifest.$segment -ne $null) {
         $manifest = $manifest.$segment
       }
       else {

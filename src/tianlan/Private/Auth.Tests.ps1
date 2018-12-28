@@ -77,7 +77,16 @@ InModuleScope Tianlan {
     Context '4' {
       It 'Throws if returned subscription does not match request' {
         # Set mocks
-        Mock 'Get-AzContext' { $null }
+        $script:getAzContextCounter = 0
+        Mock 'Get-AzContext' {
+          $script:getAzContextCounter++
+          if ($script:getAzContextCounter -eq 1) {
+            return $null
+          }
+          else {
+            return @{ Subscription = @{ Id = 'something-else' } }
+          }
+        }
         Mock 'Connect-AzAccount' {
           @{
             Account      = @{

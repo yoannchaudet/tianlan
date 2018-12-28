@@ -31,7 +31,8 @@ InModuleScope Tianlan {
           "b": "c",
           "d": [1, 2]
         },
-        "c": false
+        "c": false,
+        "null": null
       }'
         (Get-Manifest servicePrincipals, test) | Should -Be $null
         (Get-Manifest a, b) | Should -Be 'c'
@@ -39,6 +40,7 @@ InModuleScope Tianlan {
         (Get-Manifest c) | Should -Be $false
         (Get-Manifest d) | Should -Be $null
         (Get-Manifest d -DefaultValue 42) | Should -Be 42
+        (Get-Manifest null -DefaultValue 'not-null') | Should -Be 'not-null'
       }
     }
 
