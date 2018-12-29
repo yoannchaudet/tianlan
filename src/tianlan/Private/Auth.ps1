@@ -7,13 +7,28 @@ function Connect-Azure {
   Connect to Azure if needed and return the requested subscription identifier.
 
   .PARAMETER SubscriptionId
-  The subscription identifier.
+  The subscription identifier. When provided do an interactive login.
+
+  .PARAMETER Environment
+  The environment to connect to. When provided do a non-interactive login.
   #>
 
   param (
-    [Parameter(Mandatory)]
-    [string] $SubscriptionId
+    [Parameter(Mandatory, ParameterSetName = 'Interactive')]
+    [string] $SubscriptionId,
+    [Parameter(Mandatory, ParameterSetName = 'NonInteractive')]
+    [string] $Environment
   )
+
+  # Decide what kind of account we want
+  if ($PsCmdlet.ParameterSetName -eq 'Interactive') {
+    $requestedAccountType = 'User'
+  }
+  else {
+    $requestedAccountType = 'ServicePrincipal'
+    $SubscriptionId = (Get-Manifest 'environments' $Environment -ThrowOnMiss).subscriptionId
+    $servicePrincipal = Get-Manifest 'servicePrincipals' "$($Environment).admin" -ThrowOnMiss
+  }
 
   try {
     & {
@@ -24,19 +39,33 @@ function Connect-Azure {
       $context = Get-AzContext
 
       # Already connected
-      if ($context -and $context.Account.Type -eq 'User' -and $context.Subscription.Id -eq $SubscriptionId) {
+      if ($context -and $context.Account.Type -eq $requestedAccountType -and $context.Subscription.Id -eq $SubscriptionId) {
         return
       }
 
       # If the current context is an account one, try to switch the subscription
-      if ($context -and $context.Account.Type -eq 'User' -and (Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction 'SilentlyContinue')) {
+      if ($context -and $context.Account.Type -eq $requestedAccountType -and (Get-AzSubscription -SubscriptionId $SubscriptionId -ErrorAction 'SilentlyContinue')) {
         $context = Set-AzContext -Subscription $SubscriptionId
         $requiresConnect = $context.Subscription.Id -ne $SubscriptionId
       }
 
       # Connect if needed
       if ($requiresConnect) {
-        Connect-AzAccount -Subscription $SubscriptionId | Out-Null
+        switch ($PsCmdlet.ParameterSetName) {
+          'Interactive' {
+            Connect-AzAccount -Subscription $SubscriptionId | Out-Null
+          }
+          'NonInteractive' {
+            Connect-AzAccount `
+              -CertificateThumbprint $servicePrincipal.certificateThumbprint `
+              -ApplicationId $servicePrincipal.applicationId `
+              -Tenant $servicePrincipal.tenantId `
+              -ServicePrincipal | Out-Null
+            Set-AzContext -Subscription $SubscriptionId | Out-Null
+          }
+        }
+
+        # Validate the context
         $context = Get-AzContext
         if ($context.Subscription.Id -ne $SubscriptionId) {
           throw 'Unable to connect for requested subscription'
@@ -45,7 +74,12 @@ function Connect-Azure {
     }
 
     # Update shell's authentication context (so it's displayed in the prompt)
-    $global:TIANLIN_AUTHCONTEXT = $SubscriptionId
+    if ($PsCmdlet.ParameterSetName -eq 'Interactive') {
+      $global:TIANLIN_AUTHCONTEXT = "$SubscriptionId (user: $((Get-AzContext).Account.Id))"
+    }
+    else {
+      $global:TIANLIN_AUTHCONTEXT = "$Environment (sp)"
+    }
 
     # Return the subscription
     return $SubscriptionId

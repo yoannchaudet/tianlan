@@ -23,12 +23,16 @@ function Get-Manifest {
   .PARAMETER DefaultValue
   When Filters is provided, set the value to return in case the filter
   fails. Default to null.
+
+  .PARAMETER ThrowOnMiss
+  Throw an exception if the Filters fail.
   #>
 
   param (
     [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
     [string[]] $Filters,
-    [object] $DefaultValue = $null
+    [object] $DefaultValue = $null,
+    [switch] $ThrowOnMiss
   )
 
   # Get the manifest file path
@@ -51,6 +55,9 @@ function Get-Manifest {
         $manifest = $manifest.$segment
       }
       else {
+        if ($ThrowOnMiss) {
+          throw "Unable to locate $($Filters -Join '.') in Manifest"
+        }
         $manifest = $DefaultValue
         break
       }

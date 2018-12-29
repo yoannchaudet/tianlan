@@ -41,6 +41,8 @@ InModuleScope Tianlan {
         (Get-Manifest d) | Should -Be $null
         (Get-Manifest d -DefaultValue 42) | Should -Be 42
         (Get-Manifest null -DefaultValue 'not-null') | Should -Be 'not-null'
+        { (Get-Manifest null -ThrowOnMiss) } | Should -Throw 'Unable to locate null in Manifest'
+        { (Get-Manifest a,b,c -ThrowOnMiss) } | Should -Throw 'Unable to locate a.b.c in Manifest'
       }
     }
 
