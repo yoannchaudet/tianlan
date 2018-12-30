@@ -4,16 +4,16 @@ InModuleScope Tianlan {
       Set-DeploymentPath 'testdrive:'
     }
 
-    Describe 'Get-DefaultManifest' {
+    Describe 'Get-NewManifest' {
       It 'Returns a value' {
-        Get-DefaultManifest | Should -Not -Be $null
-        Get-DefaultManifest | Should -BeOfType PSCustomObject
+        Get-NewManifest | Should -Not -Be $null
+        Get-NewManifest | Should -BeOfType PSCustomObject
       }
     }
 
     Describe 'Get-Manifest' {
       It 'Always returns a value' {
-        Get-Manifest | Should -BeLike (Get-DefaultManifest)
+        Get-Manifest | Should -BeLike (Get-NewManifest)
       }
 
       It 'Returns actual provided Manifest.json file' {

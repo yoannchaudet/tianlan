@@ -1,10 +1,10 @@
-function Get-DefaultManifest {
+function Get-NewManifest {
   <#
   .SYNOPSIS
-  Return a default manifest.
+  Return a new manifest.
   #>
 
-  # Return a default (empty) manifest file
+  # Return a new (empty) manifest file
   '{
     "servicePrincipals": {},
     "environments": {}
@@ -45,7 +45,7 @@ function Get-Manifest {
 
   # Return a default (empty) manifest
   else {
-    $manifest = Get-DefaultManifest
+    $manifest = Get-NewManifest
   }
 
   # Select requested part of the manifest (if needed)
