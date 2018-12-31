@@ -1,5 +1,4 @@
 function New-Environment {
-
   <#
   .SYNOPSIS Create a new environment.
 
@@ -58,7 +57,7 @@ function New-Environment {
       -RoleDefinitionName 'Owner' `
       -ApplicationId ($sp.ServicePrincipal.ApplicationId) `
       -Scope "/subscriptions/$SubscriptionId"
-  } -RetryDelay { 5  }
+  } -RetryDelay { 5 }
 
   # Update the Manifest file
   Write-Host 'Updating Manifest file' -ForegroundColor 'Blue'
