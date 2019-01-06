@@ -1,266 +1,35 @@
 InModuleScope Tianlan {
   Describe 'Connect-Azure' {
+    BeforeAll {
+      Set-DeploymentPath 'testdrive:'
+    }
+
     Context '1.a' {
-      It 'Returns cached connection (user)' {
-        # Set mocks
-        Mock 'Get-AzContext' {
-          @{
-            Account      = @{ Type = 'User'; Id = 'some@email.com' }
-            Subscription = @{ Id = 'test' }
-          }
-        }
+      It 'Connects when no context is available (interactive)' {
+        Mock 'Get-AzContext' -ParameterFilter { $ListAvailable } { }
+        Mock 'Get-AzContext' -ParameterFilter { !$ListAvailable } { 'selected context' }
+        Mock 'Select-AzContext' {}
         Mock 'Connect-AzAccount' {}
+        Mock 'Get-AzSubscription' {}
+        Mock 'Select-AzSubscription' {}
 
-        # Connect
-        Connect-Azure -SubscriptionId 'test' | Should -Be 'test'
-
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
-        Assert-MockCalled 'Connect-AzAccount' -Times 0
+        Connect-Azure -SubscriptionId 'x' | Should -Be 'selected context'
+        Assert-MockCalled 'Get-AzContext' -Times 2
+        Assert-MockCalled 'Select-AzContext' -Times 0
+        Assert-MockCalled 'Connect-AzAccount' -Times 1
+        Assert-MockCalled 'Get-AzSubscription' -Times 0
+        Assert-MockCalled 'Select-AzSubscription' -Times 0
       }
     }
 
     Context '1.b' {
-      It 'Returns cached connection (service principal)' {
-        # Set mocks
-        Mock 'Get-AzContext' {
-          @{
-            Account      = @{ Type = 'ServicePrincipal' }
-            Subscription = @{ Id = 'test' }
-          }
-        }
+      It 'Connects when no context is available (service principal)' {
+        Mock 'Get-AzContext' -ParameterFilter { $ListAvailable } { }
+        Mock 'Get-AzContext' -ParameterFilter { !$ListAvailable } { 'selected context' }
+        Mock 'Select-AzContext' {}
         Mock 'Connect-AzAccount' {}
-
-        # Set manifest
-        Set-Manifest @"
-        {
-          "servicePrincipals": {
-            "test.admin": {
-              "certificateThumbprint": "thumbprint",
-              "applicationId": "app id",
-              "tenantId": "tenant id"
-            }
-          },
-          "environments": {
-            "test": {
-              "subscriptionId": "test"
-            }
-          }
-        }
-"@
-
-        # Connect
-        Connect-Azure -Environment 'test' | Should -Be 'test'
-
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
-        Assert-MockCalled 'Connect-AzAccount' -Times 0
-      }
-    }
-
-    Context '2.a' {
-      It 'Invalidates cache (user)' {
-        # Set mocks
-        Mock 'Get-AzContext' {
-          @{
-            Account      = @{ Type = 'ServicePrincipal'; Id = 'some email that should not be here' }
-            Subscription = @{ Id = 'test' }
-          }
-        }
-        Mock 'Connect-AzAccount' {
-          @{
-            Account      = @{ Type = 'User' }
-            Subscription = @{ Id = 'test' }
-          }
-        }
-
-        # Connect
-        Connect-Azure -SubscriptionId 'test' | Should -Be 'test'
-
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
-        Assert-MockCalled 'Connect-AzAccount' -Times 1
-      }
-    }
-
-    Context '2.b' {
-      It 'Invalidates cache (service principal)' {
-        # Set mocks
-        Mock 'Get-AzContext' {
-          @{
-            Account      = @{ Type = 'User' }
-            Subscription = @{ Id = 'test' }
-          }
-        }
-        Mock 'Connect-AzAccount' {
-          @{
-            Account      = @{ Type = 'ServicePrincipal' }
-            Subscription = @{ Id = 'test' }
-          }
-        }
-        Mock 'Set-AzContext' {}
-
-        # Set manifest
-        Set-Manifest @"
-        {
-          "servicePrincipals": {
-            "test.admin": {
-              "certificateThumbprint": "thumbprint",
-              "applicationId": "app id",
-              "tenantId": "tenant id"
-            }
-          },
-          "environments": {
-            "test": {
-              "subscriptionId": "test"
-            }
-          }
-        }
-"@
-
-        # Connect
-        Connect-Azure -Environment 'test' | Should -Be 'test'
-
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
-        Assert-MockCalled 'Connect-AzAccount' -Times 1
-        Assert-MockCalled 'Set-AzContext' -Times 1
-      }
-    }
-
-    Context '3.a' {
-      It 'Switches subscription without re-connecting (user)' {
-        # Set mocks
-        Mock 'Get-AzContext' {
-          @{
-            Account      = @{ Type = 'User'; Id = 'some@email.com' }
-            Subscription = @{ Id = 'test1' }
-          }
-        }
-        Mock 'Connect-AzAccount' {}
-        Mock 'Get-AzSubscription' { $true } -ParameterFilter { $SubscriptionId -eq 'test2' }
-        Mock 'Set-AzContext' {
-          @{
-            Account      = @{ Type = 'User' }
-            Subscription = @{ Id = 'test2' }
-          }
-        }
-
-        # Connect
-        Connect-Azure -SubscriptionId 'test2' | Should -Be 'test2'
-
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
-        Assert-MockCalled 'Connect-AzAccount' -Times 0
-        Assert-MockCalled 'Get-AzSubscription' -Times 1
-        Assert-MockCalled 'Set-AzContext' -Times 1
-      }
-    }
-
-    Context '3.b' {
-      It 'Switches subscription without re-connecting (service principal)' {
-        # Set mocks
-        Mock 'Get-AzContext' {
-          @{
-            Account      = @{ Type = 'ServicePrincipal' }
-            Subscription = @{ Id = 'test1' }
-          }
-        }
-        Mock 'Connect-AzAccount' {}
-        Mock 'Get-AzSubscription' { $true } -ParameterFilter { $SubscriptionId -eq 'test2' }
-        Mock 'Set-AzContext' {
-          @{
-            Account      = @{ Type = 'ServicePrincipal' }
-            Subscription = @{ Id = 'test2' }
-          }
-        }
-
-        # Set manifest
-        Set-Manifest @"
-        {
-          "servicePrincipals": {
-            "test.admin": {
-              "certificateThumbprint": "thumbprint",
-              "applicationId": "app id",
-              "tenantId": "tenant id"
-            }
-          },
-          "environments": {
-            "test": {
-              "subscriptionId": "test2"
-            }
-          }
-        }
-"@
-
-        # Connect
-        Connect-Azure -Environment 'test' | Should -Be 'test2'
-
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
-        Assert-MockCalled 'Connect-AzAccount' -Times 0
-        Assert-MockCalled 'Get-AzSubscription' -Times 1
-        Assert-MockCalled 'Set-AzContext' -Times 1
-      }
-    }
-
-    Context '4.a' {
-      It 'Throws if returned subscription does not match request (user)' {
-        # Set mocks
-        $script:getAzContextCounter = 0
-        Mock 'Get-AzContext' {
-          $script:getAzContextCounter++
-          if ($script:getAzContextCounter -eq 1) {
-            return $null
-          }
-          else {
-            return @{ Subscription = @{ Id = 'something-else' } }
-          }
-        }
-        Mock 'Connect-AzAccount' {
-          @{
-            Account      = @{
-              Type = 'User'
-            }
-            Subscription = @{
-              Id = 'something-else'
-            }
-          }
-        }
-
-        # Connect
-        { Connect-Azure -SubscriptionId 'test' } | Should -Throw 'Unable to connect for requested subscription'
-
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
-        Assert-MockCalled 'Connect-AzAccount' -Times 1
-      }
-    }
-
-    Context '4.b' {
-      It 'Throws if returned subscription does not match request (service principal)' {
-        # Set mocks
-        $script:getAzContextCounter = 0
-        Mock 'Get-AzContext' {
-          $script:getAzContextCounter++
-          if ($script:getAzContextCounter -eq 1) {
-            return $null
-          }
-          else {
-            return @{ Subscription = @{ Id = 'something-else' } }
-          }
-        }
-        Mock 'Connect-AzAccount' {
-          @{
-            Account      = @{
-              Type = 'ServicePrincipal'
-            }
-            Subscription = @{
-              Id = 'something-else'
-            }
-          }
-        }
-        Mock 'Set-AzContext' {}
+        Mock 'Get-AzSubscription' { $true }
+        Mock 'Select-AzSubscription' {}
 
         # Set manifest
         Set-Manifest @"
@@ -274,35 +43,87 @@ InModuleScope Tianlan {
         },
         "environments": {
           "test": {
-            "subscriptionId": "expected-subscription"
+            "subscriptionId": "test"
           }
         }
       }
 "@
-        # Connect
-        { Connect-Azure -Environment 'test' } | Should -Throw 'Unable to connect for requested subscription'
 
-        # Assertions
-        Assert-MockCalled 'Get-AzContext' -Times 1
+        Connect-Azure -Environment 'test' | Should -Be 'selected context'
+        Assert-MockCalled 'Get-AzContext' -Times 2
+        Assert-MockCalled 'Select-AzContext' -Times 0
         Assert-MockCalled 'Connect-AzAccount' -Times 1
-        Assert-MockCalled 'Set-AzContext' -Times 1
+        Assert-MockCalled 'Get-AzSubscription' -Times 1
+        Assert-MockCalled 'Select-AzSubscription' -Times 1
       }
     }
 
-    Context '5' {
-      It 'Throws on invalid environment/service principal (service principal)' {
+    Context '2.a' {
+      It 'Uses context when available (interactive)' {
+        Mock 'Get-AzContext' -ParameterFilter { $ListAvailable } {
+          $ctx = New-MockObject -Type Microsoft.Azure.Commands.Profile.Models.Core.PSAzureContext
+          $ctx.Account = New-MockObject -Type Microsoft.Azure.Commands.Profile.Models.PSAzureRmAccount
+          $ctx.Account.Type = 'User'
+          $ctx.Subscription = New-MockObject -Type Microsoft.Azure.Commands.Profile.Models.PSAzureSubscription
+          $ctx.Subscription.Id = 'x'
+          $ctx
+        }
+        Mock 'Get-AzContext' -ParameterFilter { !$ListAvailable } { 'selected context' }
+        Mock 'Select-AzContext' { }
+        Mock 'Connect-AzAccount' {}
+        Mock 'Get-AzSubscription' {}
+        Mock 'Select-AzSubscription' {}
+
+        Connect-Azure -SubscriptionId 'x' | Should -Be 'selected context'
+        Assert-MockCalled 'Get-AzContext' -Times 2
+        Assert-MockCalled 'Select-AzContext' -Times 1
+        Assert-MockCalled 'Connect-AzAccount' -Times 0
+        Assert-MockCalled 'Get-AzSubscription' -Times 0
+        Assert-MockCalled 'Select-AzSubscription' -Times 0
+      }
+    }
+
+    Context '2.b' {
+      It 'Uses context when available (service principal)' {
+        Mock 'Get-AzContext' -ParameterFilter { $ListAvailable } {
+          $ctx = New-MockObject -Type Microsoft.Azure.Commands.Profile.Models.Core.PSAzureContext
+          $ctx.Account = New-MockObject -Type Microsoft.Azure.Commands.Profile.Models.PSAzureRmAccount
+          $ctx.Account.Type = 'ServicePrincipal'
+          $ctx.Account.Id = 'app id'
+          $ctx.Subscription = New-MockObject -Type Microsoft.Azure.Commands.Profile.Models.PSAzureSubscription
+          $ctx.Subscription.Id = 'test'
+          $ctx
+        }
+        Mock 'Get-AzContext' -ParameterFilter { !$ListAvailable } { 'selected context' }
+        Mock 'Select-AzContext' { }
+        Mock 'Connect-AzAccount' {}
+        Mock 'Get-AzSubscription' {}
+        Mock 'Select-AzSubscription' {}
+
         # Set manifest
         Set-Manifest @"
-        {
-          "environments": {
-            "test": {
-              "subscriptionId": "expected-subscription"
-            }
+      {
+        "servicePrincipals": {
+          "test.admin": {
+            "certificateThumbprint": "thumbprint",
+            "applicationId": "app id",
+            "tenantId": "tenant id"
+          }
+        },
+        "environments": {
+          "test": {
+            "subscriptionId": "test"
           }
         }
+      }
 "@
-        { Connect-Azure -Environment 'test2' } | Should -Throw 'Unable to locate environments.test2 in Manifest'
-        { Connect-Azure -Environment 'test' } | Should -Throw 'Unable to locate servicePrincipals.test.admin in Manifest'
+
+        Connect-Azure -Environment 'test' | Should -Be 'selected context'
+        Assert-MockCalled 'Get-AzContext' -Times 2
+        Assert-MockCalled 'Select-AzContext' -Times 1
+        Assert-MockCalled 'Connect-AzAccount' -Times 0
+        Assert-MockCalled 'Get-AzSubscription' -Times 0
+        Assert-MockCalled 'Select-AzSubscription' -Times 0
       }
     }
   }
