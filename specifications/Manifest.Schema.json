@@ -11,10 +11,6 @@
         },
         "location": {
           "$ref": "#/definitions/location"
-        },
-        "admin": {
-          "type": "string",
-          "description": "Name of the service principal used to administrate the environment."
         }
       },
       "required": [
@@ -22,6 +18,20 @@
         "location"
       ],
       "additionalProperties": false
+    },
+    "resourceGroup": {
+      "type": "object",
+      "description": "Azure resource group.",
+      "properties": {
+        "templates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Azure Resource Manager template name (without extension)."
+          },
+          "minItems": 1
+        }
+      }
     },
     "subscriptionId": {
       "type": "string",
@@ -78,13 +88,18 @@
         "tenantId": {
           "type": "string",
           "description": "The tenant identifier (= identifier of the Azure Active Directory) in which the service prinpal lives."
+        },
+        "certificateThumbprint": {
+          "type": "string",
+          "description": "Thumbprint (SHA-1) for the current certificate associated to the service principal."
         }
       },
       "additionalProperties": false,
       "required": [
         "id",
         "applicationId",
-        "tenantId"
+        "tenantId",
+        "certificateThumbprint"
       ]
     }
   },
@@ -113,6 +128,18 @@
       },
       "minProperties": 1,
       "additionalProperties": false
+    },
+    "resourceGroups": {
+      "description": "Set of resource groups to deploy.",
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9\\-\\.]{1,90}$": {
+          "$ref": "#/definitions/resourceGroup"
+        }
+      },
+      "minProperties": 1,
+      "additionalProperties": false
     }
-  }
+  },
+  "additionalProperties": false
 }
