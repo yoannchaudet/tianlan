@@ -32,7 +32,8 @@ function Invoke-Retry {
     try {
       & $ScriptBlock @Parameters
       break
-    } catch {
+    }
+    catch {
       # Exit
       if ($tentative -gt $MaxRetries) { throw }
 
@@ -44,4 +45,30 @@ function Invoke-Retry {
       }
     }
   }
+}
+
+function Get-Hash {
+  <#
+  .SYNOPSIS
+  Return a short hash for a given string.
+
+  .PARAMETER Value
+  The value to hash.
+
+  .PARAMETER Length
+  The length of the hash.
+  #>
+  param(
+    [Parameter(Mandatory)]
+    [string] $Value,
+    [ValidateRange(1, 40)]
+    [int] $Length = 10
+  )
+
+  # Hash the string using SHA-1 (produces up to 40 bytes/characters)
+  $encoding = [System.Text.Encoding]::UTF8
+  $sha1 = New-Object System.Security.Cryptography.SHA1CryptoServiceProvider
+  $hash = $sha1.ComputeHash($encoding.GetBytes($Value))
+  $hashString = ($hash | ForEach-Object { $_.ToString('x2') }) -Join ''
+  $hashString.Substring(0, $Length)
 }
