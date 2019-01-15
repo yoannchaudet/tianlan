@@ -53,4 +53,30 @@ InModuleScope Tianlan {
       { Get-Hash 'x' -Length 41 } | Should -Throw
     }
   }
+
+  Describe 'Get-Property' {
+    It 'Returns passed value if no filters are provided' {
+      $x = @{}
+      Get-Property $x | Should -Be $x
+    }
+
+    It 'Supports filtering' {
+      $x = @{
+        a = @{
+          b = 'c'
+          d = @(1, 2)
+        }
+        c = $false
+        null = $null
+      }
+      (Get-Property $x a, b) | Should -Be 'c'
+      (Get-Property $x a, d) | Should -Be @(1, 2)
+      (Get-Property $x c) | Should -Be $false
+      (Get-Property $x d) | Should -Be $null
+      (Get-Property $x d -DefaultValue 42) | Should -Be 42
+      (Get-Property $x null -DefaultValue 'not-null') | Should -Be 'not-null'
+      { (Get-Property $x null -ThrowOnMiss) } | Should -Throw 'Unable to locate null'
+      { (Get-Property $x a,b,c -ThrowOnMiss) } | Should -Throw 'Unable to locate a.b.c'
+    }
+  }
 }

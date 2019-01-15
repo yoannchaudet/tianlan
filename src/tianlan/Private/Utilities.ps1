@@ -72,3 +72,51 @@ function Get-Hash {
   $hashString = ($hash | ForEach-Object { $_.ToString('x2') }) -Join ''
   $hashString.Substring(0, $Length)
 }
+
+function Get-Property {
+  <#
+  .SYNOPSIS
+  Return a given property in an object.
+
+  .PARAMETER Filters
+  Optional string array of properties to follow in the object.
+  When provided, returns the matching property if possible.
+
+  .PARAMETER DefaultValue
+  When Filters is provided, set the value to return in case the filter
+  fails. Default to null.
+
+  .PARAMETER ThrowOnMiss
+  Throw an exception if the Filters fail.
+  #>
+
+  param (
+    [Parameter(Position=0)]
+    [pscustomobject] $Object,
+    [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
+    [string[]] $Filters,
+    [object] $DefaultValue = $null,
+    [switch] $ThrowOnMiss
+  )
+
+  # Select requested part of the object (if needed)
+  $filteredObject = $Object
+  if ($Filters) {
+    foreach ($segment in $Filters) {
+      $segmentValue = $filteredObject | Select-Object -ExpandProperty $segment -ErrorAction 'SilentlyContinue'
+      if ($segmentValue -ne $null) {
+        $filteredObject = $segmentValue
+      }
+      else {
+        if ($ThrowOnMiss) {
+          throw "Unable to locate $($Filters -Join '.')"
+        }
+        $filteredObject = $DefaultValue
+        break
+      }
+    }
+  }
+
+  # Return the object
+  return $filteredObject
+}

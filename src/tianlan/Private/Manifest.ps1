@@ -38,34 +38,16 @@ function Get-Manifest {
   # Get the manifest file path
   $manifestFile = Join-DeploymentPath 'Manifest.json' -SkipValidation
 
-  # Parse the manifest
+  # Parse the manifest or get a default one
   if (Test-Path $manifestFile) {
     $manifest = Get-Content -Raw -Path $manifestFile -Encoding 'UTF8' | ConvertFrom-Json
   }
-
-  # Return a default (empty) manifest
   else {
     $manifest = Get-NewManifest
   }
 
-  # Select requested part of the manifest (if needed)
-  if ($Filters) {
-    foreach ($segment in $Filters) {
-      if ($manifest -and $manifest.psobject.Properties[$segment] -and $manifest.$segment -ne $null) {
-        $manifest = $manifest.$segment
-      }
-      else {
-        if ($ThrowOnMiss) {
-          throw "Unable to locate $($Filters -Join '.') in Manifest"
-        }
-        $manifest = $DefaultValue
-        break
-      }
-    }
-  }
-
-  # Return the manifest
-  return $manifest
+  # Return the filtered manifest
+  Get-Property -Object $manifest -Filters $Filters -DefaultValue $DefaultValue -ThrowOnMiss:$ThrowOnMiss
 }
 
 function Set-Manifest {
