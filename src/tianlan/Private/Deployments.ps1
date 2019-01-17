@@ -1,13 +1,46 @@
-enum ContextType {
-  Environment
+#
+# Types
+#
+
+class Context {
+  # Context name
+  [string] $Name
+  # Hash
+  [string] $Hash
+  # Key vault name
+  [string] $VaultName
 }
 
 class DeploymentContext {
+  # Name of the template
   [string] $TemplateName
+  # Resource group
   [string] $ResourceGroup
+  # Location
   [string] $Location
-  [ContextType] $ContextType
-  [string] $ContextName
+  # Deployment context (available in ARM templates)
+  [Context] $Context
+}
+
+#
+# Functions
+#
+
+function Get-VaultName() {
+  <#
+  .SYNOPSIS
+  Return the name of the environment's key vault.
+
+  .PARAMETER Environment
+  The environment name.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $Environment
+  )
+
+  return "vault$(Get-Hash $Environment)"
 }
 
 function Get-DeploymentContext() {
@@ -32,8 +65,10 @@ function Get-DeploymentContext() {
   $ctx.TemplateName = '$Environment'
   $ctx.ResourceGroup = $Environment
   $ctx.Location = $environmentDef.location
-  $ctx.ContextType = 'Environment'
-  $ctx.ContextName = $Environment
+  $ctx.Context = [Context]::new()
+  $ctx.Context.Name = $Environment
+  $ctx.Context.Hash = Get-Hash $Environment
+  $ctx.Context.VaultName = Get-VaultName $Environment
   return $ctx
 }
 
@@ -78,15 +113,11 @@ function Get-DeploymentFile() {
   return $resolvedPath
 }
 
-function Get-TemplateParameters {
+function Get-TemplateParameter {
   <#
   .SYNOPSIS
-  Get the template parameters for a given context.
-
-  .DESCRIPTION
-  Get the template parameters for a given context.
-
-  Parse the file and build a hashmap out of the parameters.
+  Evaluate a parameter file template and return the
+  file's content.
 
   .PARAMETER Context
   The deployment context.
@@ -98,32 +129,84 @@ function Get-TemplateParameters {
   )
 
   # Lookup the parameters file
-  $file = Get-DeploymentFile `
-    -Context $Context.ContextName `
-    -Path "Parameters/$($Context.TemplateName)" `
+  $parameterFile = Get-DeploymentFile `
+    -Context ${private:Context}.Context.Name `
+    -Path "Templates/$(${private:Context}.TemplateName)" `
     -Extension 'Parameters.json'
 
-  # Parse file and collect parameters
-  $parameters = @{}
-  $parsedFile = Get-Content -Raw -Path $file -Encoding 'UTF8' | ConvertFrom-Json
-  if ($parsedFile.psobject.properties['parameters']) {
-    $parsedFile.parameters.psobject.properties | ForEach-Object {
-      if ($parsedFile.parameters.($_.Name).psobject.properties['value']) {
-        $parameters[($_.Name)] = $parsedFile.parameters.($_.Name).value
+  # Evaluate the parameter file and return it
+  $arguments = @{
+    # Variables to expose
+    ContextVariables = @{
+      context  = $Context.Context
+      manifest = Get-Manifest
+    }
+
+    # Functions to copy from current scope to template scope
+    ContextFunctions = @('Get-Property')
+
+    # Scope
+    Context          = {
+      function Get-Context {
+        <#
+        .SYNOPSIS Return (part of the) context (as JSON)
+        #>
+        param(
+          [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
+          [string[]] $Filters
+        )
+        Get-Property $Context -Filters $Filters -ThrowOnMiss | ConvertTo-Json
+      }
+
+      function Get-Manifest {
+        <#
+        .SYNOPSIS Return (part of the) manifest (as JSON)
+        #>
+        param(
+          [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
+          [string[]] $Filters
+        )
+        Get-Property $manifest -Filters $Filters -ThrowOnMiss | ConvertTo-Json
       }
     }
   }
-  return $parameters
+  Get-Content -Path $parameterFile -Raw -Encoding 'UTF8' | Merge-Template @arguments
 }
 
 function New-TemplateDeployment {
+  <#
+  .SYNOPSIS
+  Start a new template deployment.
+
+  .PARAMETER Context
+  The deployment context.
+
+  .PARAMETER Parameters
+  Parameters to pass to the template deployment.
+  #>
 
   param (
     [Parameter(Mandatory)]
     [DeploymentContext] $Context,
-    [hashtable] $Parameters
+    [hashtable] $Parameters = @{}
   )
 
-  # WIP
+  # Create resource group if needed
+  New-ResourceGroup -Name $Context.ResourceGroup -Location $Context.Location
 
+  # Lookup the template file
+  $templateFile = Get-DeploymentFile `
+    -Context $Context.Context.Name `
+    -Path "Templates/$($Context.TemplateName)" `
+    -Extension 'Template.json'
+
+  # Create the deployment
+  New-AzResourceGroupDeployment `
+    -Name ((New-Guid).Guid) `
+    -ResourceGroupName $Context.ResourceGroup `
+    -TemplateFile $templateFile `
+    -TemplateParameterObject $Parameters `
+    -Mode 'Incremental' `
+    -Force `
+    -Verbose
 }

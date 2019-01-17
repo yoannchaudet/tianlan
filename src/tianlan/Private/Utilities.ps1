@@ -120,3 +120,46 @@ function Get-Property {
   # Return the object
   return $filteredObject
 }
+
+function Use-TemporaryFile {
+  <#
+  .SYNOPSIS
+  Execute a script block in the context of a temporary file.
+
+  .DESCRIPTION
+  Execute a script block in the context of a temporary file.
+
+  The temporary file is removed upon completion of the script block.
+
+  .PARAMETER ScriptBlock
+  The script block to execute. It is passed a single parameter: the temporary file path.
+
+  .PARAMETER ScriptBlockArguments
+  Optional array of arguments to pass to the script block. May be used not to leak
+  variables in the script block's scope.
+
+  .PARAMETER Extension
+  Optional extension to give the temporary file (including .).
+
+  .PARAMETER DontRemoveFile
+  Switch indicating if the file should be removed right away or not.
+  #>
+  param (
+    [Parameter(Mandatory)]
+    [scriptblock] $ScriptBlock,
+    [array] $ScriptBlockArguments = @(),
+    [string] $Extension = ""
+  )
+
+  # Create a temp file
+  # Note on that: https://github.com/PowerShell/PowerShell/issues/4216
+  $private:file = Join-Path ([System.IO.Path]::GetTempPath()) "$(New-Guid)${private:Extension}"
+  try {
+    # Call the script block
+    & $ScriptBlock $private:file @ScriptBlockArguments
+  }
+  finally {
+    # Remove the file
+    Remove-Item -Path $private:file -Force -ErrorAction 'SilentlyContinue'
+  }
+}

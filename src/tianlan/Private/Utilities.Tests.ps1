@@ -62,11 +62,11 @@ InModuleScope Tianlan {
 
     It 'Supports filtering' {
       $x = @{
-        a = @{
+        a    = @{
           b = 'c'
           d = @(1, 2)
         }
-        c = $false
+        c    = $false
         null = $null
       }
       (Get-Property $x a, b) | Should -Be 'c'
@@ -76,7 +76,56 @@ InModuleScope Tianlan {
       (Get-Property $x d -DefaultValue 42) | Should -Be 42
       (Get-Property $x null -DefaultValue 'not-null') | Should -Be 'not-null'
       { (Get-Property $x null -ThrowOnMiss) } | Should -Throw 'Unable to locate null'
-      { (Get-Property $x a,b,c -ThrowOnMiss) } | Should -Throw 'Unable to locate a.b.c'
+      { (Get-Property $x a, b, c -ThrowOnMiss) } | Should -Throw 'Unable to locate a.b.c'
+    }
+  }
+
+  Describe 'Use-TemporaryFile' {
+    It 'Creates temporary file path and cleans after itself' {
+      Use-TemporaryFile {
+        param ($file)
+        $file | Should -Not -BeNullOrEmpty
+        $global:file = $file
+        'hello' | Out-File -FilePath $file
+        Test-Path -Path $global:file | Should -BeTrue
+      }
+      Test-Path -Path $global:file | Should -BeFalse
+    }
+
+    It 'Creates temporary file path and cleans after itself (even after exception)' {
+      { Use-TemporaryFile {
+          param ($file)
+          $file | Should -Not -BeNullOrEmpty
+          $global:file = $file
+          'hello' | Out-File -FilePath $file
+          Test-Path -Path $global:file | Should -BeTrue
+          throw 'x'
+        }} | Should -Throw
+      Test-Path -Path $global:file | Should -BeFalse
+    }
+
+    It 'Creates temporary file path with requested extension' {
+      Use-TemporaryFile {
+        param ($file)
+        $file.EndsWith('.pfx') | Should -BeTrue
+      } -Extension '.pfx'
+    }
+
+    It 'Returns the output of the scriptblock' {
+      Use-TemporaryFile {
+        param ($file)
+        "test"
+      } -Extension '.pfx' | Should -Be "test"
+    }
+
+    It 'Passes arguments' {
+      Use-TemporaryFile {
+        param ($file, $test1, $test2, $test3)
+        $test1 | Should -Be 'test1'
+        $test2 | Should -Be 'test2'
+        $test3 | Should -Be 'test3'
+        "test"
+      } -ScriptBlockArguments @('test1','test2','test3') -Extension '.pfx' | Should -Be "test"
     }
   }
 }

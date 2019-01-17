@@ -123,11 +123,11 @@ function New-Certificate {
     [string] $CommonName
   )
 
-  # Generate the certificate
-  # Note on the temp path: https://github.com/PowerShell/PowerShell/issues/4216
-  $certPath = Join-Path ([System.IO.Path]::GetTempPath()) "$((New-Guid).Guid).pfx"
-  $certPassword = New-RandomPassword -AsSecureString
-  try {
+  Use-TemporaryFile {
+    param ($certPath)
+
+    # Generate the certificate
+    $certPassword = New-RandomPassword -AsSecureString
     $cert = New-SelfSignedCertificate `
       -OutCertPath $certPath `
       -CommonName $CommonName `
@@ -148,13 +148,10 @@ function New-Certificate {
     $store.Open($openFlags::ReadWrite)
     $store.Add($x509Certificate2::New($certPath, $certPassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet))
     $store.Close()
-  }
-  finally {
-    Remove-Item -Path $certPath -Force -ErrorAction 'SilentlyContinue'
-  }
 
-  # Return a reference object
-  return $cert
+    # Return the certificate
+    return $cert
+  } -Extension '.pfx'
 }
 
 function Get-Certificate {

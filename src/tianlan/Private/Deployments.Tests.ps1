@@ -4,6 +4,12 @@ InModuleScope Tianlan {
       Set-DeploymentPath 'testdrive:'
     }
 
+    Describe 'Get-VaultName' {
+      It 'Returns a hashed value' {
+        Get-VaultName -Environment 'test' | Should -Be 'vaulta94a8fe5cc'
+      }
+    }
+
     Describe 'Get-DeploymentContext' {
       It 'Returns environment context' {
         { Get-DeploymentContext -Environment 'test' } | Should -Throw
@@ -21,8 +27,9 @@ InModuleScope Tianlan {
         $ctx.TemplateName | Should -Be '$Environment'
         $ctx.ResourceGroup | Should -Be 'test'
         $ctx.Location | Should -Be 'location'
-        $ctx.ContextType | Should -Be 'Environment'
-        $ctx.ContextName | Should -Be 'test'
+        $ctx.Context.Name | Should -Be 'test'
+        $ctx.Context.Hash | Should -Be 'a94a8fe5cc'
+        $ctx.Context.VaultName | Should -Be 'vaulta94a8fe5cc'
       }
     }
 
@@ -63,7 +70,7 @@ InModuleScope Tianlan {
       }
     }
 
-    Describe 'Get-TemplateParameters' {
+    Describe 'Get-TemplateParameter' {
       BeforeAll {
         Set-Manifest @"
         {
@@ -75,90 +82,72 @@ InModuleScope Tianlan {
           }
         }
 "@
-        New-Item -Path (Join-Path (Get-DeploymentPath) 'Parameters') -ItemType 'Directory' -ErrorAction 'SilentlyContinue' | Out-Null
+        $script:ctx = Get-DeploymentContext -Environment 'test'
+        $script:ctx.TemplateName = 'Test'
+        New-Item -Path (Join-Path (Get-DeploymentPath) 'Templates') -ItemType 'Directory' -ErrorAction 'SilentlyContinue'
       }
 
-      It 'Parses valid file' {
-        @"
+      It 'Renders (empty) parameter file' {
+        $file = @"
         {
-          "`$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-          "contentVersion": "1.0.0.0",
-          "parameters": {
-            "a": {
-              "value": 1
-            },
-            "b": {
-              "value": "2"
-            },
-            "c": {
-              "value": null
-            },
-            "d": {
-              "value": [1, 2, false]
-            },
-            "e": {
-              "value": {
-                "a": 0
-              }
-            }
-          }
         }
-"@ | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Parameters/$Environment.Parameters.json')
-        $parameters = Get-TemplateParameters -Context (Get-DeploymentContext -Environment 'test')
-        $parameters.a | Should -Be 1
-        $parameters.b | Should -Be "2"
-        $parameters.c | Should -Be $null
-        $parameters.d | Should -Be @(1, 2, $false)
-        $parameters.e.a | Should -Be 0
+"@
+        $file | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/Test.Parameters.json')
+        $json = Get-TemplateParameter -Context $script:ctx | ConvertFrom-Json
+        @($json.psobject.properties).Count | Should -Be 0
       }
 
-      It 'Parses valid file (and ignore invalid parameters)' {
-        @"
+      It 'Renders (context) parameter file' {
+        $file = @"
         {
-          "`$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-          "contentVersion": "1.0.0.0",
-          "parameters": {
-            "a": {
-              "value": 1
-            },
-            "b": {
-            }
-          }
+          "a": `$(Get-Context 'Hash'),
+          "b": `$(Get-Context 'Name'),
+          "c": `$(Get-Context 'VaultName')
         }
-"@ | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Parameters/$Environment.Parameters.json')
-        $parameters = Get-TemplateParameters -Context (Get-DeploymentContext -Environment 'test')
-        $parameters.a | Should -Be 1
-        $parameters.Count | Should -Be 1
+"@
+        $file | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/Test.Parameters.json')
+        $json = Get-TemplateParameter -Context $script:ctx | ConvertFrom-Json
+        @($json.psobject.properties).Count | Should -Be 3
+        $json.a | Should -Be $ctx.Context.Hash
+        $json.b | Should -Be $ctx.Context.Name
+        $json.c | Should -Be $ctx.Context.VaultName
       }
 
-      It 'Parses valid file (without parameters)' {
-        @"
+      It 'Fails on invalid (context) filters' {
+        $file = @"
         {
-          "`$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-          "contentVersion": "1.0.0.0",
-          "parameters": {}
+          "a": `$(Get-Context 'InvalidFilter')
         }
-"@ | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Parameters/$Environment.Parameters.json')
-        $parameters = Get-TemplateParameters -Context (Get-DeploymentContext -Environment 'test')
-        $parameters.Count | Should -Be 0
+"@
+        $file | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/Test.Parameters.json')
+        { Get-TemplateParameter -Context $script:ctx } | Should -Throw
       }
 
-      It 'Parses invalid valid file (without parameters property)' {
-        @"
+      It 'Renders (context+manifest) parameter file' {
+        $file = @"
         {
-          "`$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-          "contentVersion": "1.0.0.0"
+          "a": `$(Get-Context),
+          "b": `$(Get-Manifest 'environments','test')
         }
-"@ | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Parameters/$Environment.Parameters.json')
-        $parameters = Get-TemplateParameters -Context (Get-DeploymentContext -Environment 'test')
-        $parameters.Count | Should -Be 0
+"@
+        $file | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/Test.Parameters.json')
+        $json = Get-TemplateParameter -Context $script:ctx | ConvertFrom-Json
+        @($json.psobject.properties).Count | Should -Be 2
+        $json.a.Hash | Should -Be $ctx.Context.Hash
+        $json.a.Name | Should -Be $ctx.Context.Name
+        $json.a.VaultName | Should -Be $ctx.Context.VaultName
+        $json.b.subscriptionId | Should -Be 'subscription id'
+        $json.b.location | Should -Be 'location'
       }
 
-      It 'Fails to parse invalid JSON file' {
-        @"
-        {{}}
-"@ | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Parameters/$Environment.Parameters.json')
-        { Get-TemplateParameters -Context (Get-DeploymentContext -Environment 'test') } | Should -Throw
+      It 'Fails on invalid (manifest) filters' {
+        $file = @"
+        {
+          "a": `$(Get-Manifest 'environments','bad')
+        }
+"@
+        $file | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/Test.Parameters.json')
+        { Get-TemplateParameter -Context $script:ctx } | Should -Throw
       }
     }
   }
