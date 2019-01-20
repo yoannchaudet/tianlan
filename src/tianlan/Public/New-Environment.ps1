@@ -5,11 +5,8 @@ function New-Environment {
   .DESCRIPTION
   Create a new environment.
 
-  This script runs in interactive mode. It firsts creates a service principal
+  This script runs in interactive mode. It creates a service principal
   and give it co-admin permissions on the whole subscription.
-
-  Then it creates the environment's Key Vault which is used to store environment
-  related secrets.
 
   .PARAMETER Name
   The environment name.

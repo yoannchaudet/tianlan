@@ -80,6 +80,41 @@ InModuleScope Tianlan {
     }
   }
 
+  Describe 'Get-JsonProperty' {
+    It 'Returns passed value if no filters are provided' {
+      $x = @{}
+      Get-JsonProperty $x -Raw | Should -Be $x
+      Get-JsonProperty $x | Should -Be '{}'
+    }
+
+    It 'Supports filtering' {
+      $x = @{
+        a    = @{
+          b = 'c'
+          d = @(1, 2)
+        }
+        c    = $false
+        null = $null
+      }
+      (Get-JsonProperty $x a, b) | Should -Be '"c"'
+      (Get-JsonProperty $x a, b -Raw) | Should -Be 'c'
+      (Get-JsonProperty $x a, d) | Should -Match "[\\s*1,\\s*2\\s*]"
+      (Get-JsonProperty $x a, d -Raw) | Should -Be @(1, 2)
+      (Get-JsonProperty $x c) | Should -Be "false"
+      (Get-JsonProperty $x c -Raw) | Should -Be $false
+      (Get-JsonProperty $x d) | Should -Be $null
+      (Get-JsonProperty $x d -Raw) | Should -Be $null
+      (Get-JsonProperty $x d -DefaultValue 42) | Should -Be "42"
+      (Get-JsonProperty $x d -DefaultValue 42 -Raw) | Should -Be 42
+      (Get-JsonProperty $x null -DefaultValue 'not-null') | Should -Be '"not-null"'
+      (Get-JsonProperty $x null -DefaultValue 'not-null' -Raw) | Should -Be 'not-null'
+      { (Get-JsonProperty $x null -ThrowOnMiss) } | Should -Throw 'Unable to locate null'
+      { (Get-JsonProperty $x null -ThrowOnMiss -Raw) } | Should -Throw 'Unable to locate null'
+      { (Get-JsonProperty $x a, b, c -ThrowOnMiss) } | Should -Throw 'Unable to locate a.b.c'
+      { (Get-JsonProperty $x a, b, c -ThrowOnMiss -Raw) } | Should -Throw 'Unable to locate a.b.c'
+    }
+  }
+
   Describe 'Use-TemporaryFile' {
     It 'Creates temporary file path and cleans after itself' {
       Use-TemporaryFile {

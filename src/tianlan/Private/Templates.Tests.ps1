@@ -35,6 +35,12 @@ InModuleScope Tianlan {
         | Should -Be "Thing1 and Thing2"
     }
 
+    It 'Expand the template in a dedicated scope' {
+      { "`$(Get-Me)" `
+          | Merge-Template -Context { function private:Get-Me { write-host 'should not be called' }} `
+      } | Should -Throw
+    }
+
     It 'Does not expose internal context variable' {
       { "`$localContext" | Merge-Template } | Should -Throw
     }

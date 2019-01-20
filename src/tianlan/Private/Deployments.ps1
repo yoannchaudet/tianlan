@@ -143,7 +143,7 @@ function Get-TemplateParameter {
     }
 
     # Functions to copy from current scope to template scope
-    ContextFunctions = @('Get-Property')
+    ContextFunctions = @('Get-Property', 'Get-JsonProperty')
 
     # Scope
     Context          = {
@@ -153,9 +153,10 @@ function Get-TemplateParameter {
         #>
         param(
           [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
-          [string[]] $Filters
+          [string[]] $Filters,
+          [switch] $Raw
         )
-        Get-Property $Context -Filters $Filters -ThrowOnMiss | ConvertTo-Json
+        Get-JsonProperty $context -Filters $Filters -ThrowOnMiss -Raw:$Raw
       }
 
       function Get-Manifest {
@@ -164,9 +165,10 @@ function Get-TemplateParameter {
         #>
         param(
           [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
-          [string[]] $Filters
+          [string[]] $Filters,
+          [switch] $Raw
         )
-        Get-Property $manifest -Filters $Filters -ThrowOnMiss | ConvertTo-Json
+        Get-JsonProperty $manifest -Filters $Filters -ThrowOnMiss -Raw:$Raw
       }
     }
   }
@@ -180,15 +182,11 @@ function New-TemplateDeployment {
 
   .PARAMETER Context
   The deployment context.
-
-  .PARAMETER Parameters
-  Parameters to pass to the template deployment.
   #>
 
   param (
     [Parameter(Mandatory)]
-    [DeploymentContext] $Context,
-    [hashtable] $Parameters = @{}
+    [DeploymentContext] $Context
   )
 
   # Create resource group if needed
@@ -200,13 +198,20 @@ function New-TemplateDeployment {
     -Path "Templates/$($Context.TemplateName)" `
     -Extension 'Template.json'
 
+  # Evaluate the parameter file
+  $parameterFileContent = Get-TemplateParameter -Context $Context
+
   # Create the deployment
-  New-AzResourceGroupDeployment `
-    -Name ((New-Guid).Guid) `
-    -ResourceGroupName $Context.ResourceGroup `
-    -TemplateFile $templateFile `
-    -TemplateParameterObject $Parameters `
-    -Mode 'Incremental' `
-    -Force `
-    -Verbose
+  Use-TemporaryFile {
+    param ($parameterFile, $context, $templateFile, $parameterFileContent)
+    $parameterFileContent | Out-File -FilePath $parameterFile -Encoding 'UTF8'
+    New-AzResourceGroupDeployment `
+      -Name ((New-Guid).Guid) `
+      -ResourceGroupName $context.ResourceGroup `
+      -TemplateFile $templateFile `
+      -TemplateParameterFile $parameterFile `
+      -Mode 'Incremental' `
+      -Force `
+      -Verbose
+  } -ScriptBlockArguments @($Context, $templateFile, $parameterFileContent)
 }

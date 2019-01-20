@@ -72,10 +72,11 @@ Remove-Variable -Name 'localContext';
 # Load context
 $Context;
 # Evaluate template (base64 is used to protect the string)
-`$ExecutionContext.InvokeCommand.ExpandString(
+& { `$ExecutionContext.InvokeCommand.ExpandString(
   `$([System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String(
   '$([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($Template)))'
   ))));
+}
 "@
 
   # Run the script

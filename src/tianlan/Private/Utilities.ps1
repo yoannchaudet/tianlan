@@ -121,6 +121,33 @@ function Get-Property {
   return $filteredObject
 }
 
+function Get-JsonProperty {
+  <#
+  .SYNOPSIS
+  Same as Get-Property but returns JSON by default unless the Raw switch is set.
+
+  .PARAMETER Raw
+  Switch to return raw value instead of JSON.
+  #>
+
+  param (
+    [Parameter(Position=0)]
+    [pscustomobject] $Object,
+    [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
+    [string[]] $Filters,
+    [object] $DefaultValue = $null,
+    [switch] $ThrowOnMiss,
+    [switch] $Raw
+  )
+
+  # Get property
+  $property = Get-Property -Object $Object -Filters $Filters -DefaultValue $DefaultValue -ThrowOnMiss:$ThrowOnMiss
+  if (!$Raw) {
+    $property = $property | ConvertTo-Json
+  }
+  return $property
+}
+
 function Use-TemporaryFile {
   <#
   .SYNOPSIS
