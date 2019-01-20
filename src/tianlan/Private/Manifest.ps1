@@ -36,10 +36,10 @@ function Get-Manifest {
   )
 
   # Get the manifest file path
-  $manifestFile = Join-DeploymentPath 'Manifest.json' -SkipValidation
+  $manifestFile = Join-DeploymentPath 'Manifest.json'
 
   # Parse the manifest or get a default one
-  if (Test-Path $manifestFile) {
+  if ($manifestFile) {
     $manifest = Get-Content -Raw -Path $manifestFile -Encoding 'UTF8' | ConvertFrom-Json
   }
   else {
@@ -67,7 +67,10 @@ function Set-Manifest {
   )
 
   # Get path of the manifest file
-  $manifestPath = Join-DeploymentPath 'Manifest.json' -SkipValidation
+  $manifestPath = Join-DeploymentPath 'Manifest.json'
+  if (!$manifestPath) {
+    $manifestPath = Join-Path (Get-DeploymentPath) 'Manifest.json'
+  }
 
   # Parse string as json (does syntax validation and reformatting when written in the file)
   if ($Content -is [string]) {

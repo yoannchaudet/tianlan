@@ -104,11 +104,11 @@ function Get-DeploymentFile() {
   )
 
   # Look context file first
-  $resolvedPath = Join-DeploymentPath -Path "${Path}.${Context}.${Extension}" -SkipValidation
+  $resolvedPath = Join-DeploymentPath -Path "${Path}.${Context}.${Extension}"
 
   # If no context file is found, lookup default file
-  if (!(Test-Path -Path $resolvedPath)) {
-    $resolvedPath = Join-DeploymentPath -Path "${Path}.${Extension}"
+  if (!$resolvedPath) {
+    $resolvedPath = Join-DeploymentPath -Path "${Path}.${Extension}" -ThrowOnMiss
   }
   return $resolvedPath
 }

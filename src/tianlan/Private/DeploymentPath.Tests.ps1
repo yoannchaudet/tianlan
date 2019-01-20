@@ -11,26 +11,12 @@ InModuleScope Tianlan {
         'hello there' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'f/there.txt')
       }
 
-      It 'Joins paths with validation' {
+      It 'Joins paths' {
         Join-DeploymentPath 'here.txt' | Should -Be (Join-Path (Get-DeploymentPath) 'here.txt')
         Join-DeploymentPath 'f/there.txt' | Should -Be (Join-Path (Get-DeploymentPath) 'f/there.txt')
-        { Join-DeploymentPath 'there.txt' } | Should -Throw "Deployment path not found: there.txt"
-      }
-
-      It 'Joins paths without validation' {
-        Join-DeploymentPath 'hello' -SkipValidation | Should -Be (Join-Path (Get-DeploymentPath) 'hello')
-        Join-DeploymentPath 'hello/my/friend' -SkipValidation | Should -Be (Join-Path (Get-DeploymentPath) 'hello/my/friend')
-        Join-DeploymentPath 'README.md' -SkipValidation | Should -Be (Join-Path (Get-DeploymentPath) 'README.md')
-      }
-
-      It 'Looks in the user and default deployment paths (in that order)' {
-        # README file exists in the default path
+        Join-DeploymentPath 'there.txt' | Should -BeNullOrEmpty
+        { Join-DeploymentPath 'there.txt' -ThrowOnMiss } | Should -Throw "Deployment path not found: there.txt"
         Join-DeploymentPath 'README.md' | Should -Be (Join-Path $PSScriptRoot '../Deployment/README.md')
-        # Without validation, only the user path is considered
-        Join-DeploymentPath 'README.md' -SkipValidation | Should -Be (Join-Path (Get-DeploymentPath) 'README.md')
-        # If we crate a README file in the user path, it should be returned (when validation is active)
-        'read me' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'README.md')
-        Join-DeploymentPath 'README.md' | Should -Be (Join-Path (Get-DeploymentPath) 'README.md')
       }
     }
   }
