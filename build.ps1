@@ -40,7 +40,7 @@ if ($Task -eq 'TestCodeCoverage') {
   $Parameters['CodeCoverage'] = Get-ChildItem `
     -Path (Join-Path $PSScriptRoot 'src') `
     -Include '*.ps1' `
-    -Exclude '*.Tests.ps1' `
+    -Exclude '*.Tests.ps1','Tianlan.profile.ps1' `
     -Recurse `
     | Select-Object { $_.FullName } -ExpandProperty 'FullName'
   $Task = 'Test'

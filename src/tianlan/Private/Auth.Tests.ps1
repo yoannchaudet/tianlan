@@ -58,6 +58,42 @@ InModuleScope Tianlan {
       }
     }
 
+    Context '1.c' {
+      It 'Connects when no context is available (service principal - no access)' {
+        Mock 'Get-AzContext' -ParameterFilter { $ListAvailable } { }
+        Mock 'Get-AzContext' -ParameterFilter { !$ListAvailable } { 'selected context' }
+        Mock 'Select-AzContext' {}
+        Mock 'Connect-AzAccount' {}
+        Mock 'Get-AzSubscription' { $false }
+        Mock 'Select-AzSubscription' {}
+
+        # Set manifest
+        Set-Manifest @"
+      {
+        "servicePrincipals": {
+          "test.admin": {
+            "certificateThumbprint": "thumbprint",
+            "applicationId": "app id",
+            "tenantId": "tenant id"
+          }
+        },
+        "environments": {
+          "test": {
+            "subscriptionId": "test"
+          }
+        }
+      }
+"@
+
+        { Connect-Azure -Environment 'test' } | Should -Throw 'Service principal does not have access to requested subscription'
+        Assert-MockCalled 'Get-AzContext' -Times 1
+        Assert-MockCalled 'Select-AzContext' -Times 0
+        Assert-MockCalled 'Connect-AzAccount' -Times 1
+        Assert-MockCalled 'Get-AzSubscription' -Times 1
+        Assert-MockCalled 'Select-AzSubscription' -Times 0
+      }
+    }
+
     Context '2.a' {
       It 'Uses context when available (interactive)' {
         Mock 'Get-AzContext' -ParameterFilter { $ListAvailable } {

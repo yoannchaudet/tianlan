@@ -51,10 +51,10 @@ InModuleScope Tianlan {
           -Context 'integration' `
           -Path 'Templates/X' `
           -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.integration.Template.json'))
-        { Get-DeploymentFile `
-            -Context 'random' `
-            -Path 'Templates/Y' `
-            -Extension 'Template.json' } | Should -Throw
+        Get-DeploymentFile `
+          -Context 'random' `
+          -Path 'Templates/Y' `
+          -Extension 'Template.json' | Should -BeNullOrEmpty
         Get-DeploymentFile `
           -Context 'integration' `
           -Path 'Templates/Y' `
@@ -63,10 +63,10 @@ InModuleScope Tianlan {
           -Context 'integration' `
           -Path 'Templates/Z' `
           -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/Z.Template.json'))
-        { Get-DeploymentFile `
-            -Context 'random' `
-            -Path 'Templates/' `
-            -Extension 'Template.json' } | Should -Throw
+        Get-DeploymentFile `
+          -Context 'random' `
+          -Path 'Templates/' `
+          -Extension 'Template.json' | Should -BeNullOrEmpty
       }
     }
 
@@ -85,6 +85,10 @@ InModuleScope Tianlan {
         $script:ctx = Get-DeploymentContext -Environment 'test'
         $script:ctx.TemplateName = 'Test'
         New-Item -Path (Join-Path (Get-DeploymentPath) 'Templates') -ItemType 'Directory' -ErrorAction 'SilentlyContinue'
+      }
+
+      It 'Skips parameter file if none' {
+        Get-TemplateParameter -Context $script:ctx | Should -BeNullOrEmpty
       }
 
       It 'Renders (empty) parameter file' {

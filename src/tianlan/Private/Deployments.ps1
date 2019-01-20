@@ -84,6 +84,8 @@ function Get-DeploymentFile() {
   - path.context.extension (context file)
   - path.extension (default file)
 
+  Returns null if no files can be found.
+
   .PARAMETER Context
   The context name.
 
@@ -103,21 +105,26 @@ function Get-DeploymentFile() {
     [string] $Extension
   )
 
-  # Look context file first
-  $resolvedPath = Join-DeploymentPath -Path "${Path}.${Context}.${Extension}"
+  # Paths to try (in order)
+  $paths = @(
+    "${Path}.${Context}.${Extension}",
+    "${Path}.${Extension}"
+  )
 
-  # If no context file is found, lookup default file
-  if (!$resolvedPath) {
-    $resolvedPath = Join-DeploymentPath -Path "${Path}.${Extension}" -ThrowOnMiss
+  # Return the first path that works
+  foreach ($candidatePath in $paths) {
+    $resolvedPath = Join-DeploymentPath $candidatePath
+    if ($resolvedPath) {
+      return $resolvedPath
+    }
   }
-  return $resolvedPath
 }
 
 function Get-TemplateParameter {
   <#
   .SYNOPSIS
   Evaluate a parameter file template and return the
-  file's content.
+  file's content (if any).
 
   .PARAMETER Context
   The deployment context.
@@ -133,6 +140,9 @@ function Get-TemplateParameter {
     -Context ${private:Context}.Context.Name `
     -Path "Templates/$(${private:Context}.TemplateName)" `
     -Extension 'Parameters.json'
+  if (!$parameterFile) {
+    return
+  }
 
   # Evaluate the parameter file and return it
   $arguments = @{
@@ -198,20 +208,31 @@ function New-TemplateDeployment {
     -Path "Templates/$($Context.TemplateName)" `
     -Extension 'Template.json'
 
-  # Evaluate the parameter file
+  # Evaluate the parameter file (if any)
   $parameterFileContent = Get-TemplateParameter -Context $Context
 
   # Create the deployment
   Use-TemporaryFile {
     param ($parameterFile, $context, $templateFile, $parameterFileContent)
-    $parameterFileContent | Out-File -FilePath $parameterFile -Encoding 'UTF8'
-    New-AzResourceGroupDeployment `
-      -Name ((New-Guid).Guid) `
-      -ResourceGroupName $context.ResourceGroup `
-      -TemplateFile $templateFile `
-      -TemplateParameterFile $parameterFile `
-      -Mode 'Incremental' `
-      -Force `
-      -Verbose
+
+    # Prepare deployment parameters
+    $params = @{
+      Name              = (New-Guid).Guid
+      ResourceGroupName = $context.ResourceGroup
+      TemplateFile      = $templateFile
+      Mode              = 'Incremental'
+      Force             = $true
+      Verbose           = $true
+    }
+
+    # Persist the parameter file on disk if any and add it to the list of deployment
+    # parameters
+    if ($parameterFileContent) {
+      $parameterFileContent | Out-File -FilePath $parameterFile -Encoding 'UTF8'
+      $params['TemplateParameterFile'] = $parameterFile
+    }
+
+    # Run the deployment
+    New-AzResourceGroupDeployment @params
   } -ScriptBlockArguments @($Context, $templateFile, $parameterFileContent)
 }
