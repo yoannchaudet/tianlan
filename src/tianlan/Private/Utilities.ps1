@@ -143,7 +143,7 @@ function Get-JsonProperty {
   # Get property
   $property = Get-Property -Object $Object -Filters $Filters -DefaultValue $DefaultValue -ThrowOnMiss:$ThrowOnMiss
   if (!$Raw) {
-    $property = $property | ConvertTo-Json
+    $property = $property | ConvertTo-Json -Depth 100
   }
   return $property
 }

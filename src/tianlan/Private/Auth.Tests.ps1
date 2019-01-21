@@ -34,16 +34,18 @@ InModuleScope Tianlan {
         # Set manifest
         Set-Manifest @"
       {
-        "servicePrincipals": {
-          "test.admin": {
-            "certificateThumbprint": "thumbprint",
-            "applicationId": "app id",
-            "tenantId": "tenant id"
-          }
-        },
         "environments": {
           "test": {
-            "subscriptionId": "test"
+            "subscriptionId": "test",
+            "servicePrincipals": {
+              "admin": {
+                "certificate": {
+                  "thumbprint": "thumbprint"
+                },
+                "applicationId": "app id",
+                "tenantId": "tenant id"
+              }
+            }
           }
         }
       }
@@ -70,16 +72,18 @@ InModuleScope Tianlan {
         # Set manifest
         Set-Manifest @"
       {
-        "servicePrincipals": {
-          "test.admin": {
-            "certificateThumbprint": "thumbprint",
-            "applicationId": "app id",
-            "tenantId": "tenant id"
-          }
-        },
         "environments": {
           "test": {
-            "subscriptionId": "test"
+            "subscriptionId": "test",
+            "servicePrincipals": {
+              "admin": {
+                "certificate": {
+                  "thumbprint": "thumbprint"
+                },
+                "applicationId": "app id",
+                "tenantId": "tenant id"
+              }
+            }
           }
         }
       }
@@ -139,16 +143,18 @@ InModuleScope Tianlan {
         # Set manifest
         Set-Manifest @"
       {
-        "servicePrincipals": {
-          "test.admin": {
-            "certificateThumbprint": "thumbprint",
-            "applicationId": "app id",
-            "tenantId": "tenant id"
-          }
-        },
         "environments": {
           "test": {
-            "subscriptionId": "test"
+            "subscriptionId": "test",
+            "servicePrincipals": {
+              "admin": {
+                "certificate": {
+                  "thumbprint": "thumbprint"
+                },
+                "applicationId": "app id",
+                "tenantId": "tenant id"
+              }
+            }
           }
         }
       }

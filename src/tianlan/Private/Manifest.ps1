@@ -6,8 +6,7 @@ function Get-NewManifest {
 
   # Return a new (empty) manifest file
   '{
-    "servicePrincipals": {},
-    "environments": {}
+     "environments": {}
   }' | ConvertFrom-Json
 }
 
@@ -50,6 +49,99 @@ function Get-Manifest {
   Get-Property -Object $manifest -Filters $Filters -DefaultValue $DefaultValue -ThrowOnMiss:$ThrowOnMiss
 }
 
+function Add-ManifestProperty {
+  <#
+  .SYNOPSIS
+  Add a property to a manifest object and return the object.
+
+  .PARAMETER Manifest
+  The manifest object.
+
+  .PARAMETER Property
+  The property name.
+
+  .PARAMETER Value
+  The value to set.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [object] $Manifest,
+    [Parameter(Mandatory)]
+    [string] $Property,
+    [Parameter(Mandatory)]
+    [AllowNull()]
+    [object] $Value
+  )
+
+  # Force add a property
+  $Manifest | Add-Member -MemberType 'NoteProperty' -Name $Property -Value $Value -Force
+
+  # Return the object
+  return $Manifest
+}
+
+function Get-ServicePrincipalDefinition {
+  <#
+  .SYNOPSIS
+  Return a service principal definition.
+
+  .PARAMETER ServicePrincipal
+  The service principal object (returned by New-ServicePrincipal).
+
+  .PARAMETER CertificateName
+  The name to give the certificate.
+  #>
+
+  param (
+    [pscustomobject] $ServicePrincipal,
+    [string] $CertificateName
+  )
+
+  return [hashtable] @{
+    id            = $ServicePrincipal.ServicePrincipal.Id
+    applicationId = $ServicePrincipal.ServicePrincipal.ApplicationId
+    tenantId      = (Get-AzContext).Tenant.Id
+    certificate   = @{
+      thumbprint = $ServicePrincipal.Certificate.Thumbprint
+      name       = $CertificateName
+    }
+  }
+}
+
+function Get-EnvironmentDefinition {
+  <#
+  .SYNOPSIS
+  Return an environment definition.
+
+  .PARAMETER Name
+  Environment name.
+
+  .PARAMETER SubscriptionId
+  Environment subscription id.
+
+  .PARAMETER AdminServicePrincipalDefinition
+  The admin service principal definition.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $Location,
+    [Parameter(Mandatory)]
+    [string] $SubscriptionId,
+    [Parameter(Mandatory)]
+    [hashtable] $AdminServicePrincipalDefinition
+  )
+
+  return [hashtable] @{
+    location          = $Location
+    subscriptionId    = $SubscriptionId
+    servicePrincipals = @{
+      admin = $AdminServicePrincipalDefinition
+    }
+  }
+}
+
 function Set-Manifest {
   <#
   .SYNOPSIS
@@ -79,7 +171,7 @@ function Set-Manifest {
 
   # Output the file
   if ($Content -is [psobject] -or $Content -is [hashtable]) {
-    $Content | ConvertTo-Json | Out-File -FilePath $manifestPath -Encoding 'UTF8'
+    $Content | ConvertTo-Json -Depth 100 | Out-File -FilePath $manifestPath -Encoding 'UTF8'
   }
   else {
     throw 'Unsupported content type'

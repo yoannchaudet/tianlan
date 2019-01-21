@@ -3,43 +3,65 @@
   "description": "Manifest file describing deployments.",
   "type": "object",
   "definitions": {
-    "environment": {
+    "certificate": {
+      "description": "A certificate stored in a Key Vault.",
       "type": "object",
       "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the certificate (in Key Vault)."
+        },
+        "thumbprint": {
+          "type": "string",
+          "description": "SHA-1 thumbprint of the certificate."
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "thumbprint"
+      ]
+    },
+    "environment": {
+      "description": "Environment definition (e.g. dev, staging, production).",
+      "type": "object",
+      "properties": {
+        "location": {
+          "$ref": "#/definitions/location"
+        },
         "subscriptionId": {
           "$ref": "#/definitions/subscriptionId"
         },
-        "location": {
-          "$ref": "#/definitions/location"
+        "servicePrincipals": {
+          "type": "object",
+          "description": "Environment service principals (= automation users).",
+          "properties": {
+            "admin": {
+              "description": "Administrator identity for the environment (used to provision resources and grant access to other service principals).",
+              "$ref": "#/definitions/servicePrincipal"
+            }
+          },
+          "patternProperties": {
+            "^[a-zA-Z]{1,256}$": {
+              "$ref": "#/definitions/servicePrincipal"
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "admin"
+          ]
         }
       },
+      "additionalProperties": false,
       "required": [
         "subscriptionId",
-        "location"
-      ],
-      "additionalProperties": false
-    },
-    "resourceGroup": {
-      "type": "object",
-      "description": "Azure resource group.",
-      "properties": {
-        "templates": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "description": "Azure Resource Manager template name (without extension)."
-          },
-          "minItems": 1
-        }
-      }
-    },
-    "subscriptionId": {
-      "type": "string",
-      "description": "Azure Subscription identifier."
+        "location",
+        "servicePrincipals"
+      ]
     },
     "location": {
-      "type": "string",
       "description": "Azure location.",
+      "type": "string",
       "enum": [
         "eastasia",
         "southeastasia",
@@ -74,24 +96,23 @@
       ]
     },
     "servicePrincipal": {
-      "type": "object",
       "description": "Azure Active Directory service principal (= identity other than a user).",
+      "type": "object",
       "properties": {
         "id": {
-          "type": "string",
-          "description": "The service principal identifier (or object identifier)."
+          "description": "The service principal identifier (or object identifier).",
+          "type": "string"
         },
         "applicationId": {
-          "type": "string",
-          "description": "The application identifier the service principal is associated to."
+          "description": "The application identifier the service principal is associated to.",
+          "type": "string"
         },
         "tenantId": {
-          "type": "string",
-          "description": "The tenant identifier (= identifier of the Azure Active Directory) in which the service prinpal lives."
+          "description": "The tenant identifier (= identifier of the Azure Active Directory) in which the service prinpal lives.",
+          "type": "string"
         },
-        "certificateThumbprint": {
-          "type": "string",
-          "description": "Thumbprint (SHA-1) for the current certificate associated to the service principal."
+        "certificate": {
+          "$ref": "#/definitions/certificate"
         }
       },
       "additionalProperties": false,
@@ -99,42 +120,24 @@
         "id",
         "applicationId",
         "tenantId",
-        "certificateThumbprint"
+        "certificate"
       ]
+    },
+    "subscriptionId": {
+      "description": "Azure Subscription identifier.",
+      "type": "string"
     }
   },
   "properties": {
     "$schema": {
       "type": "string"
     },
-    "servicePrincipals": {
-      "description": "Set of service principals used to manage permissions.",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9\\-\\.]{1,256}$": {
-          "$ref": "#/definitions/servicePrincipal"
-        }
-      },
-      "minProperties": 1,
-      "additionalProperties": false
-    },
     "environments": {
-      "description": "A set of environments (e.g. development, integration, staging, production).",
+      "description": "Environments (e.g. development, integration, staging, production).",
       "type": "object",
       "patternProperties": {
         "^[a-zA-Z0-9\\-\\.]{1,90}$": {
           "$ref": "#/definitions/environment"
-        }
-      },
-      "minProperties": 1,
-      "additionalProperties": false
-    },
-    "resourceGroups": {
-      "description": "Set of resource groups to deploy.",
-      "type": "object",
-      "patternProperties": {
-        "^[a-zA-Z0-9\\-\\.]{1,90}$": {
-          "$ref": "#/definitions/resourceGroup"
         }
       },
       "minProperties": 1,

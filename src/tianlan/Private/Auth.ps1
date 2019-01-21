@@ -32,7 +32,7 @@ function Connect-Azure {
   }
   else {
     $SubscriptionId = (Get-Manifest 'environments' $Environment -ThrowOnMiss).subscriptionId
-    $servicePrincipal = Get-Manifest 'servicePrincipals' "$($Environment).admin" -ThrowOnMiss
+    $servicePrincipal = Get-Manifest 'environments' $Environment 'servicePrincipals' 'admin' -ThrowOnMiss
     $context = $contexts | Where-Object {
       $_.Account.Type -eq 'ServicePrincipal' `
         -and $_.Account.Id -eq $servicePrincipal.applicationId `
@@ -50,7 +50,7 @@ function Connect-Azure {
     }
     else {
       Connect-AzAccount `
-        -CertificateThumbprint $servicePrincipal.certificateThumbprint `
+        -CertificateThumbprint $servicePrincipal.certificate.thumbprint `
         -ApplicationId $servicePrincipal.applicationId `
         -Tenant $servicePrincipal.tenantId `
         -ServicePrincipal | Out-Null

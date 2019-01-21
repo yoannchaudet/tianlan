@@ -1,18 +1,19 @@
 function New-Environment {
   <#
-  .SYNOPSIS Create a new environment.
+  .SYNOPSIS
+  Declare a new environment.
 
   .DESCRIPTION
-  Create a new environment.
+  Declare a new environment.
 
-  This script runs in interactive mode. It creates a service principal
-  and give it co-admin permissions on the whole subscription.
+  Note: this scripts runs in interactive mode. Current user must have Owner permission
+  on the subscription.
 
   .PARAMETER Name
   The environment name.
 
   .PARAMETER SubscriptionId
-  The subscription to connect to and where to create the environment.
+  The subscription where to create the environment.
 
   .PARAMETER Location
   The location where to provision the environment.
@@ -32,16 +33,11 @@ function New-Environment {
     throw 'Environment already exists'
   }
 
-  # Make sure the environment's admin is not declared already
-  $spName = "$Name.admin"
-  if (Get-Manifest 'servicePrincipals', $spName) {
-    throw "Environment's admin service principal already exists"
-  }
-
   # Connect
   Connect-Azure -SubscriptionId $SubscriptionId
 
   # Create a new service principal
+  $spName = "${Name}.admin"
   Write-Host "Creating service principal $spName..." -ForegroundColor 'Blue'
   $sp = New-ServicePrincipal -DisplayName $spName
   $sp.ServicePrincipal
@@ -58,21 +54,15 @@ function New-Environment {
 
   # Update the Manifest file
   Write-Host 'Updating Manifest file' -ForegroundColor 'Blue'
+  $environmentDef = Get-EnvironmentDefinition `
+    -Location $Location `
+    -SubscriptionId $SubscriptionId `
+    -AdminServicePrincipalDefinition (Get-ServicePrincipalDefinition -ServicePrincipal $sp -CertificateName 'Admin-Certificate')
   $manifest = Get-Manifest
-  $servicePrincipals = Get-Manifest 'servicePrincipals' -DefaultValue @{}
-  $servicePrincipals | Add-Member -MemberType 'NoteProperty' -Name $spName -Value @{
-    id                    = $sp.ServicePrincipal.Id
-    applicationId         = $sp.ServicePrincipal.ApplicationId
-    tenantId              = (Get-AzContext).Tenant.Id
-    certificateThumbprint = $sp.Certificate.Thumbprint
-  } -Force
-  $manifest.servicePrincipals = $servicePrincipals
-  $environments = Get-Manifest 'environments' -DefaultValue @{}
-  $environments | Add-Member -MemberType 'NoteProperty' -Name $Name -Value @{
-    location       = $Location
-    subscriptionId = $SubscriptionId
-  }
-  $manifest.environments = $environments
+  $manifest.environments = Add-ManifestProperty `
+    -Manifest (Get-Manifest 'environments' -DefaultValue @{}) `
+    -Property $Name `
+    -Value $environmentDef
   Set-Manifest $manifest
   Write-Host 'Done!' -ForegroundColor 'Green'
 }

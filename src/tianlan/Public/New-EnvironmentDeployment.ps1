@@ -25,12 +25,12 @@ function New-EnvironmentDeployment {
   New-TemplateDeployment -Context $context
 
   # Import the admin certificate
-  $servicePrincipal = Get-Manifest 'servicePrincipals' "$($Name).admin" -ThrowOnMiss
-  $certificate = Get-Certificate -Thumbprint $servicePrincipal.certificateThumbprint
+  $certificateDefinition = Get-Manifest 'environments', $Name, 'servicePrincipals', 'admin', 'certificate' -ThrowOnMiss
+  $certificate = Get-Certificate -Thumbprint $certificateDefinition.thumbprint
   Invoke-Retry {
     Import-AzKeyVaultCertificate `
       -VaultName $context.Context.VaultName `
-      -Name 'Admin-Certificate' `
+      -Name $certificateDefinition.name `
       -CertificateCollection $certificate
   }
 }
