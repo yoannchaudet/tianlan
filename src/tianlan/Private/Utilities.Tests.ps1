@@ -155,7 +155,7 @@ InModuleScope Tianlan {
       $x = @{}
       (Get-Property $x a, b) | Should -BeNullOrEmpty
       $x = @{ a = 1; b = 2; c =3 }
-      (Get-Property $x -Properties) | Should -Be @('a', 'b', 'c')
+      (Get-Property $x -Properties) | ForEach-Object { @('a', 'b', 'c') | Should -Contain $_ }
       $x = @{ a = @{ a1 = $null }; b = 2; c =3 }
       (Get-Property $x 'a' -Properties) | Should -Be @('a1')
     }

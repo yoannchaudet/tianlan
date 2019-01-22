@@ -54,7 +54,7 @@ InModuleScope Tianlan {
           "c": false,
           "null": null
         }'
-        (Get-Manifest a -Properties) | Should -Be @('b', 'd')
+        (Get-Manifest a -Properties) | ForEach-Object { @('b', 'd') | Should -Contain $_ }
       }
     }
 
