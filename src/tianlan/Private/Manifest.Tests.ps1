@@ -96,6 +96,13 @@ InModuleScope Tianlan {
           $definition.subscriptionId | Should -Be 'subscription id'
         }
       }
+
+      Describe 'Get-DeploymentUnitDefinition' {
+        It 'Returns the proper definition' {
+          $definition = Get-DeploymentUnitDefinition -Location 'location'
+          $definition.location | Should -Be 'location'
+        }
+      }
     }
 
     Describe 'Set-Manifest' {

@@ -22,6 +22,19 @@
         "thumbprint"
       ]
     },
+    "deploymentUnit": {
+      "description": "Deployment unit.",
+      "type": "object",
+      "properties": {
+        "location": {
+          "$ref": "#/definitions/location"
+        }
+      },
+      "required": [
+        "location"
+      ],
+      "additionalProperties": false
+    },
     "environment": {
       "description": "Environment definition (e.g. dev, staging, production).",
       "type": "object",
@@ -33,8 +46,8 @@
           "$ref": "#/definitions/subscriptionId"
         },
         "servicePrincipals": {
-          "type": "object",
           "description": "Environment service principals (= automation users).",
+          "type": "object",
           "properties": {
             "admin": {
               "description": "Administrator identity for the environment (used to provision resources and grant access to other service principals).",
@@ -50,6 +63,17 @@
           "required": [
             "admin"
           ]
+        },
+        "deploymentUnits": {
+          "description": "Deployment units in the environment.",
+          "type": "object",
+          "patternProperties": {
+            "^[a-zA-Z0-9\\-\\.]{1,32}$": {
+              "$ref": "#/definitions/deploymentUnit"
+            }
+          },
+          "minProperties": 1,
+          "additionalProperties": false
         }
       },
       "additionalProperties": false,
@@ -136,7 +160,7 @@
       "description": "Environments (e.g. development, integration, staging, production).",
       "type": "object",
       "patternProperties": {
-        "^[a-zA-Z0-9\\-\\.]{1,90}$": {
+        "^[a-zA-Z0-9\\-\\.]{1,32}$": {
           "$ref": "#/definitions/environment"
         }
       },

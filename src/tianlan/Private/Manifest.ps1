@@ -91,11 +91,11 @@ function Get-EnvironmentDefinition {
   .SYNOPSIS
   Return an environment definition.
 
-  .PARAMETER Name
-  Environment name.
+  .PARAMETER Location.
+  Location.
 
   .PARAMETER SubscriptionId
-  Environment subscription id.
+  Subscription id.
   #>
 
   param (
@@ -106,8 +106,27 @@ function Get-EnvironmentDefinition {
   )
 
   return [pscustomobject] @{
-    location          = $Location
-    subscriptionId    = $SubscriptionId
+    location       = $Location
+    subscriptionId = $SubscriptionId
+  }
+}
+
+function Get-DeploymentUnitDefinition {
+  <#
+  .SYNOPSIS
+  Return a deployment unit definition.
+
+  .PARAMETER Location
+  Location.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $Location
+  )
+
+  return [pscustomobject] @{
+    location = $Location
   }
 }
 
