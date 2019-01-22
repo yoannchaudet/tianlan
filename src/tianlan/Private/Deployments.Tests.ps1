@@ -25,7 +25,7 @@ InModuleScope Tianlan {
         }
 "@
         $ctx = Get-EnvironmentContext -Environment 'test'
-        $ctx.TemplateName | Should -Be '$Environment'
+        $ctx.TemplateName | Should -Be '$KeyVault'
         $ctx.ResourceGroup | Should -Be 'test'
         $ctx.Location | Should -Be 'location'
         $ctx.Context.Name | Should -Be 'test'
@@ -56,7 +56,7 @@ InModuleScope Tianlan {
 "@
         { Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'bad du' } | Should -Throw
         $ctx = Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'du'
-        $ctx.TemplateName | Should -Be '$DeploymentUnit'
+        $ctx.TemplateName | Should -Be '$KeyVault'
         $ctx.ResourceGroup | Should -Be 'env_du'
         $ctx.Location | Should -Be 'du location'
         $ctx.Context.Name | Should -Be 'du'
@@ -71,35 +71,37 @@ InModuleScope Tianlan {
       BeforeEach {
         New-Item -Path (Join-Path (Get-DeploymentPath) 'Templates') -ItemType 'Directory' -ErrorAction 'SilentlyContinue' | Out-Null
         '{}' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/X.Template.json')
-        '{}' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/X.integration.Template.json')
-        '{}' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/Y.integration.Template.json')
-        '{}' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/Z.Template.json')
+        '{}' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/X.env.Template.json')
+        '{}' | Out-File -FilePath (Join-Path (Get-DeploymentPath) 'Templates/X.du.env.Template.json')
       }
 
       It 'Returns deployment file in priority order' {
         Get-DeploymentFile `
-          -Context 'random' `
+          -Environment 'random' `
           -Path 'Templates/X' `
           -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.Template.json'))
         Get-DeploymentFile `
-          -Context 'integration' `
+          -Environment 'env' `
           -Path 'Templates/X' `
-          -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.integration.Template.json'))
+          -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.env.Template.json'))
         Get-DeploymentFile `
-          -Context 'random' `
-          -Path 'Templates/Y' `
-          -Extension 'Template.json' | Should -BeNullOrEmpty
+          -Environment 'env' `
+          -DeploymentUnit 'du' `
+          -Path 'Templates/X' `
+          -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.du.env.Template.json'))
         Get-DeploymentFile `
-          -Context 'integration' `
-          -Path 'Templates/Y' `
-          -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/Y.integration.Template.json'))
+          -Environment 'env' `
+          -DeploymentUnit 'baddu' `
+          -Path 'Templates/X' `
+          -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.env.Template.json'))
         Get-DeploymentFile `
-          -Context 'integration' `
-          -Path 'Templates/Z' `
-          -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/Z.Template.json'))
+          -Environment 'badenv' `
+          -DeploymentUnit 'du' `
+          -Path 'Templates/X' `
+          -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.Template.json'))
         Get-DeploymentFile `
-          -Context 'random' `
-          -Path 'Templates/' `
+          -Environment 'random' `
+          -Path 'Templates/notfound' `
           -Extension 'Template.json' | Should -BeNullOrEmpty
       }
     }

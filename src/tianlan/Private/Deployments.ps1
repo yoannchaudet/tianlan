@@ -131,14 +131,18 @@ function Get-DeploymentFile() {
   .DESCRIPTION
   Return the path to a deployment file.
 
-  Look in order at:
-  - path.context.extension (context file)
+  Look in order at (most specific to least specific):
+  - path.deploymentunit.environment.extension
+  - path.environment.extension
   - path.extension (default file)
 
   Returns null if no files can be found.
 
-  .PARAMETER Context
-  The context name.
+  .PARAMETER Environment
+  The environment name.
+
+  .PARAMETER DeploymentUnit
+  The deployment unit name.
 
   .PARAMETER Path
   The path to the file to look for.
@@ -149,7 +153,8 @@ function Get-DeploymentFile() {
 
   param (
     [Parameter(Mandatory)]
-    [string] $Context,
+    [string] $Environment,
+    [string] $DeploymentUnit,
     [Parameter(Mandatory)]
     [string] $Path,
     [Parameter(Mandatory)]
@@ -157,10 +162,12 @@ function Get-DeploymentFile() {
   )
 
   # Paths to try (in order)
-  $paths = @(
-    "${Path}.${Context}.${Extension}",
-    "${Path}.${Extension}"
-  )
+  $paths = @()
+  if ($DeploymentUnit) {
+    $paths += "${Path}.${DeploymentUnit}.${Environment}.${Extension}"
+  }
+  $paths += "${Path}.${Environment}.${Extension}"
+  $paths += "${Path}.${Extension}"
 
   # Return the first path that works
   foreach ($candidatePath in $paths) {
@@ -188,8 +195,9 @@ function Get-TemplateParameter {
 
   # Lookup the parameters file
   $parameterFile = Get-DeploymentFile `
-    -Context ${private:Context}.Context.Name `
-    -Path "Templates/$(${private:Context}.TemplateName)" `
+    -Environment $Context.Context.Environment `
+    -DeploymentUnit $Context.Context.DeploymentUnit `
+    -Path "Templates/$($Context.TemplateName)" `
     -Extension 'Parameters.json'
   if (!$parameterFile) {
     return
@@ -255,7 +263,8 @@ function New-TemplateDeployment {
 
   # Lookup the template file
   $templateFile = Get-DeploymentFile `
-    -Context $Context.Context.Name `
+    -Environment $Context.Context.Environment `
+    -DeploymentUnit $Context.Context.DeploymentUnit `
     -Path "Templates/$($Context.TemplateName)" `
     -Extension 'Template.json'
 
