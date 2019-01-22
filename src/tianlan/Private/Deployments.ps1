@@ -3,8 +3,12 @@
 #
 
 class Context {
-  # Context name
+  # Context name (either the environment or the deployment unit)
   [string] $Name
+  # Environment
+  [string] $Environment
+  # Deployment unit
+  [string] $DeploymentUnit
   # Hash
   [string] $Hash
   # Key vault name
@@ -29,21 +33,31 @@ class DeploymentContext {
 function Get-VaultName() {
   <#
   .SYNOPSIS
-  Return the name of the environment's key vault.
+  Return the name of the environment's (or deployment unit's) key vault.
 
   .PARAMETER Environment
   The environment name.
+
+  .PARAMETER DeploymentUnit
+  The deployment unit (if provided).
   #>
 
   param (
     [Parameter(Mandatory)]
-    [string] $Environment
+    [string] $Environment,
+    [string] $DeploymentUnit
   )
 
-  return "vault$(Get-Hash $Environment)"
+  if ($DeploymentUnit) {
+    $hash = Get-Hash "${Environment}_${DeploymentUnit}"
+  }
+  else {
+    $hash = Get-Hash $Environment
+  }
+  return "vault$hash"
 }
 
-function Get-DeploymentContext() {
+function Get-EnvironmentContext {
   <#
   .SYNOPSIS
   Return a deployment context.
@@ -58,17 +72,54 @@ function Get-DeploymentContext() {
   )
 
   # Get the environment definition
-  $environmentDef = Get-Manifest 'environments', $Environment
+  $environmentDef = Get-Manifest 'environments', $Environment -ThrowOnMiss
 
   # Build the context object and return it
   $ctx = [DeploymentContext]::new()
-  $ctx.TemplateName = '$Environment'
+  $ctx.TemplateName = '$KeyVault'
   $ctx.ResourceGroup = $Environment
   $ctx.Location = $environmentDef.location
   $ctx.Context = [Context]::new()
   $ctx.Context.Name = $Environment
-  $ctx.Context.Hash = Get-Hash $Environment
-  $ctx.Context.VaultName = Get-VaultName $Environment
+  $ctx.Context.Environment = $Environment
+  $ctx.Context.Hash = Get-Hash $ctx.ResourceGroup
+  $ctx.Context.VaultName = Get-VaultName -Environment $Environment
+  return $ctx
+}
+
+function Get-DeploymentUnitContext() {
+  <#
+  .SYNOPSIS
+  Return a deployment context.
+
+  .PARAMETER Environment
+  The environment.
+
+  .PARAMETER DeploymentUnit
+  The deployment unit for which to return a context.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $Environment,
+    [Parameter(Mandatory)]
+    [string] $DeploymentUnit
+  )
+
+  # Get deployment unit definition
+  $duDef = Get-Manifest 'environments', $Environment, 'deploymentUnits', $DeploymentUnit -ThrowOnMiss
+
+  # Build the context object and return it
+  $ctx = [DeploymentContext]::new()
+  $ctx.TemplateName = '$KeyVault'
+  $ctx.ResourceGroup = "${Environment}_${DeploymentUnit}"
+  $ctx.Location = $duDef.location
+  $ctx.Context = [Context]::new()
+  $ctx.Context.Name = $DeploymentUnit
+  $ctx.Context.Environment = $Environment
+  $ctx.Context.DeploymentUnit = $DeploymentUnit
+  $ctx.Context.Hash = Get-Hash $ctx.ResourceGroup
+  $ctx.Context.VaultName = Get-VaultName -Environment $Environment -DeploymentUnit $DeploymentUnit
   return $ctx
 }
 

@@ -73,7 +73,7 @@
     'Import-Tianlan',
     'Get-DeploymentPath', 'Set-DeploymentPath',
     'New-Environment', 'New-DeploymentUnit',
-    'Deploy-Environment',
+    'Deploy-Environment', 'Deploy-DeploymentUnit',
     'New-ServicePrincipal'
   )
 

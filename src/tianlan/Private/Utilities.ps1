@@ -170,7 +170,7 @@ function Get-Property {
   if ($Filters) {
     foreach ($segment in $Filters) {
       $segmentValue = $filteredObject | Select-Object -ExpandProperty $segment -ErrorAction 'SilentlyContinue'
-      if ($segmentValue -ne $null) {
+      if ($null -ne $segmentValue) {
         $filteredObject = $segmentValue
       }
       else {

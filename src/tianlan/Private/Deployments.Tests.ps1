@@ -7,12 +7,13 @@ InModuleScope Tianlan {
     Describe 'Get-VaultName' {
       It 'Returns a hashed value' {
         Get-VaultName -Environment 'test' | Should -Be 'vaulta94a8fe5cc'
+        Get-VaultName -Environment 'test' -DeploymentUnit 'test' | Should -Be 'vault4d233e1542'
       }
     }
 
-    Describe 'Get-DeploymentContext' {
+    Describe 'Get-EnvironmentContext' {
       It 'Returns environment context' {
-        { Get-DeploymentContext -Environment 'test' } | Should -Throw
+        { Get-EnvironmentContext -Environment 'test' } | Should -Throw
         Set-Manifest @"
         {
           "environments": {
@@ -23,13 +24,46 @@ InModuleScope Tianlan {
           }
         }
 "@
-        $ctx = Get-DeploymentContext -Environment 'test'
+        $ctx = Get-EnvironmentContext -Environment 'test'
         $ctx.TemplateName | Should -Be '$Environment'
         $ctx.ResourceGroup | Should -Be 'test'
         $ctx.Location | Should -Be 'location'
         $ctx.Context.Name | Should -Be 'test'
+        $ctx.Context.Environment | Should -Be 'test'
+        $ctx.Context.DeploymentUnit | Should -BeNullOrEmpty
         $ctx.Context.Hash | Should -Be 'a94a8fe5cc'
         $ctx.Context.VaultName | Should -Be 'vaulta94a8fe5cc'
+      }
+    }
+
+    Describe 'Get-DeploymentUnitContext' {
+      It 'Returns deployment unit context' {
+        { Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'du' } | Should -Throw
+        Set-Manifest @"
+        {
+          "environments": {
+            "env": {
+              "subscriptionId": "subscription id",
+              "location": "location",
+              "deploymentUnits": {
+                "du": {
+                  "location": "du location"
+                }
+              }
+            }
+          }
+        }
+"@
+        { Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'bad du' } | Should -Throw
+        $ctx = Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'du'
+        $ctx.TemplateName | Should -Be '$DeploymentUnit'
+        $ctx.ResourceGroup | Should -Be 'env_du'
+        $ctx.Location | Should -Be 'du location'
+        $ctx.Context.Name | Should -Be 'du'
+        $ctx.Context.Environment | Should -Be 'env'
+        $ctx.Context.DeploymentUnit | Should -Be 'du'
+        $ctx.Context.Hash | Should -Be '8200331830'
+        $ctx.Context.VaultName | Should -Be 'vault8200331830'
       }
     }
 
@@ -82,7 +116,7 @@ InModuleScope Tianlan {
           }
         }
 "@
-        $script:ctx = Get-DeploymentContext -Environment 'test'
+        $script:ctx = Get-EnvironmentContext -Environment 'test'
         $script:ctx.TemplateName = 'Test'
         New-Item -Path (Join-Path (Get-DeploymentPath) 'Templates') -ItemType 'Directory' -ErrorAction 'SilentlyContinue'
       }

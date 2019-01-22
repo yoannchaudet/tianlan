@@ -6,7 +6,7 @@
       "value": $(Get-Context 'VaultName')
     },
     "adminServicePrincipal": {
-      "value": $(Get-Manifest 'environments',$(Get-Context 'Name' -Raw),'servicePrincipals','admin')
+      "value": $(Get-Manifest 'environments', $(Get-Context 'Environment' -Raw), 'servicePrincipals', 'admin')
     }
   }
 }

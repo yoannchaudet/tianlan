@@ -16,7 +16,7 @@ function Deploy-Environment {
   Connect-Azure -Environment $Name
 
   # Deploy the resources
-  $context = Get-DeploymentContext -Environment $Name
+  $context = Get-EnvironmentContext -Environment $Name
   New-TemplateDeployment -Context $context
 
   # Import the certificates
