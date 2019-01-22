@@ -217,7 +217,7 @@ function Remove-Certificate {
   return $true
 }
 
-function New-ServicePrincipal {
+function New-AdServicePrincipal {
   <#
   .SYNOPSIS
   Create a new service principal.
@@ -240,12 +240,17 @@ function New-ServicePrincipal {
   # Create a new certificate
   $certificate = New-Certificate -CommonName $DisplayName
 
-  # Create a new service principal
-  $servicePrincipal = New-AzADServicePrincipal `
+  # Create an application first
+  $application = New-AzADApplication `
     -DisplayName $DisplayName `
+    -IdentifierUris "https://identity.tianlan.io/$((New-Guid).Guid)" `
     -CertValue ([System.Convert]::ToBase64String($certificate.GetRawCertData())) `
     -StartDate $certificate.NotBefore `
     -EndDate $certificate.NotAfter
+
+  # Then create a service principal
+  $servicePrincipal = New-AzADServicePrincipal `
+    -ApplicationId $application.ApplicationId
 
   # Return a reference object
   return @{

@@ -25,13 +25,17 @@ function Get-Manifest {
 
   .PARAMETER ThrowOnMiss
   Throw an exception if the Filters fail.
+
+  .PARAMETER Properties
+  Return the list of properties of the object instead of the object.
   #>
 
   param (
     [Parameter(Position = 0, ValueFromRemainingArguments = $true)]
     [string[]] $Filters,
     [object] $DefaultValue = $null,
-    [switch] $ThrowOnMiss
+    [switch] $ThrowOnMiss,
+    [switch] $Properties
   )
 
   # Get the manifest file path
@@ -46,39 +50,12 @@ function Get-Manifest {
   }
 
   # Return the filtered manifest
-  Get-Property -Object $manifest -Filters $Filters -DefaultValue $DefaultValue -ThrowOnMiss:$ThrowOnMiss
-}
-
-function Add-ManifestProperty {
-  <#
-  .SYNOPSIS
-  Add a property to a manifest object and return the object.
-
-  .PARAMETER Manifest
-  The manifest object.
-
-  .PARAMETER Property
-  The property name.
-
-  .PARAMETER Value
-  The value to set.
-  #>
-
-  param (
-    [Parameter(Mandatory)]
-    [object] $Manifest,
-    [Parameter(Mandatory)]
-    [string] $Property,
-    [Parameter(Mandatory)]
-    [AllowNull()]
-    [object] $Value
-  )
-
-  # Force add a property
-  $Manifest | Add-Member -MemberType 'NoteProperty' -Name $Property -Value $Value -Force
-
-  # Return the object
-  return $Manifest
+  Get-Property `
+    -Object $manifest `
+    -Filters $Filters `
+    -DefaultValue $DefaultValue `
+    -ThrowOnMiss:$ThrowOnMiss `
+    -Properties:$Properties
 }
 
 function Get-ServicePrincipalDefinition {
@@ -87,7 +64,7 @@ function Get-ServicePrincipalDefinition {
   Return a service principal definition.
 
   .PARAMETER ServicePrincipal
-  The service principal object (returned by New-ServicePrincipal).
+  The service principal object (returned by New-AdServicePrincipal).
 
   .PARAMETER CertificateName
   The name to give the certificate.
@@ -98,7 +75,7 @@ function Get-ServicePrincipalDefinition {
     [string] $CertificateName
   )
 
-  return [hashtable] @{
+  return [pscustomobject] @{
     id            = $ServicePrincipal.ServicePrincipal.Id
     applicationId = $ServicePrincipal.ServicePrincipal.ApplicationId
     tenantId      = (Get-AzContext).Tenant.Id
@@ -119,26 +96,18 @@ function Get-EnvironmentDefinition {
 
   .PARAMETER SubscriptionId
   Environment subscription id.
-
-  .PARAMETER AdminServicePrincipalDefinition
-  The admin service principal definition.
   #>
 
   param (
     [Parameter(Mandatory)]
     [string] $Location,
     [Parameter(Mandatory)]
-    [string] $SubscriptionId,
-    [Parameter(Mandatory)]
-    [hashtable] $AdminServicePrincipalDefinition
+    [string] $SubscriptionId
   )
 
-  return [hashtable] @{
+  return [pscustomobject] @{
     location          = $Location
     subscriptionId    = $SubscriptionId
-    servicePrincipals = @{
-      admin = $AdminServicePrincipalDefinition
-    }
   }
 }
 
@@ -170,7 +139,7 @@ function Set-Manifest {
   }
 
   # Output the file
-  if ($Content -is [psobject] -or $Content -is [hashtable]) {
+  if ($Content -is [pscustomobject] -or $Content -is [hashtable]) {
     $Content | ConvertTo-Json -Depth 100 | Out-File -FilePath $manifestPath -Encoding 'UTF8'
   }
   else {

@@ -44,29 +44,24 @@ InModuleScope Tianlan {
         { (Get-Manifest null -ThrowOnMiss) } | Should -Throw 'Unable to locate null'
         { (Get-Manifest a, b, c -ThrowOnMiss) } | Should -Throw 'Unable to locate a.b.c'
       }
-    }
 
-    Describe 'Add-ManifestProperty' {
-      It 'Adds/replaces/removes new properties' {
-        $manifest = @{}
-        $object = Add-ManifestProperty -Manifest $manifest -Property 'test' -Value 'test'
-        $object | Should -Be $manifest
-        $object.test | Should -Be 'test'
-
-        $object = Add-ManifestProperty -Manifest $manifest -Property 'test' -Value @(1, 2)
-        $object | Should -Be $manifest
-        $object.test | Should -Be @(1, 2)
-
-        $object = Add-ManifestProperty -Manifest $manifest -Property 'test' -Value $null
-        $object | Should -Be $manifest
-        $object.psobject.properties | Should -Not -Contain 'test'
+      It 'Supports returning properties' {
+        Set-Manifest '{
+          "a": {
+            "b": "c",
+            "d": [1, 2]
+          },
+          "c": false,
+          "null": null
+        }'
+        (Get-Manifest a -Properties) | Should -Be @('b', 'd')
       }
     }
 
     Context 'Manifest definitions' {
 
       BeforeEach {
-        $script:servicePrincipal = @{
+        $script:servicePrincipal = [pscustomobject] @{
           ServicePrincipal = @{
             Id            = 'object id'
             ApplicationId = 'application id'
@@ -96,12 +91,9 @@ InModuleScope Tianlan {
 
       Describe 'Get-EnvironmentDefinition' {
         It 'Returns the proper definition' {
-          $spDefinition = Get-ServicePrincipalDefinition -ServicePrincipal $script:servicePrincipal -CertificateName 'cert name'
-          $definition = Get-EnvironmentDefinition -Location 'location' -SubscriptionId 'subscription id' -AdminServicePrincipalDefinition $spDefinition
+          $definition = Get-EnvironmentDefinition -Location 'location' -SubscriptionId 'subscription id'
           $definition.location | Should -Be 'location'
           $definition.subscriptionId | Should -Be 'subscription id'
-          $definition.servicePrincipals.admin.id | Should -Be 'object id'
-          $definition.servicePrincipals.admin.certificate.name | Should -Be 'cert name'
         }
       }
     }

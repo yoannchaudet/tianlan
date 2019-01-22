@@ -54,6 +54,78 @@ InModuleScope Tianlan {
     }
   }
 
+  Describe 'Add-Property' {
+    It 'Adds/replaces/removes properties to/from object' {
+      $object = @{}
+      $object | Add-Property 'test' -Value 1
+      $object.test | Should -Be 1
+
+      $object | Add-Property 'test' -Value 2
+      $object.test | Should -Be 2
+
+      $object | Add-Property 'test' -Value $null
+      $object.psobject.properties | Should -Not -Contain 'test'
+    }
+
+    It 'Adds deep properties' {
+      $object = @{
+        a = "b"
+        c = @{
+          d = "e"
+        }
+      }
+
+      $robject = ($object | Add-Property 'c', 'd' -Value 'new e')
+      $robject.c.d | Should -Be 'new e'
+      $object.c.d | Should -Be 'new e'
+
+      $robject = ($object | Add-Property 'c2', 'd2', 'e2' -Value @(1, 2))
+      $robject.c2.d2.e2 | Should -Be @(1, 2)
+      $object.c2.d2.e2 | Should -Be @(1, 2)
+
+      $robject = ($object | Add-Property 'c', 'd3', 'e3' -Value @{f3='test'})
+      $robject.c.d3.e3.f3 | Should -Be 'test'
+      $object.c.d3.e3.f3 | Should -Be 'test'
+    }
+
+    It 'Removes deep properties' {
+      $object = @{
+        a = "b"
+        c = @{
+          d = "e"
+        }
+      }
+      $robject = ($object | Add-Property 'c', 'd' -Value $null)
+      $robject.c | Should -Not -BeNullOrEmpty
+      $object.c | Should -Not -BeNullOrEmpty
+      $robject.psobject.properties | Should -Not -Contain 'd'
+      $object.psobject.properties | Should -Not -Contain 'd'
+
+      $object = @{
+        a = @{
+          b = @{
+            c = 'c'
+          }
+        }
+      }
+      $robject = ($object | Add-Property 'a' -Value $null)
+      $robject.psobject.properties | Should -Not -Contain 'a'
+      $object.psobject.properties | Should -Not -Contain 'a'
+    }
+
+    It 'Serializes to JSON just fine' {
+      $object = [pscustomobject] @{}
+      $robject = $object | Add-Property 'a','b' -Value 1
+      $robject.a.b | Should -Be 1
+      $object.a.b | Should -Be 1
+      $object -is [pscustomobject] | Should -BeTrue
+      $robject -is [pscustomobject] | Should -BeTrue
+      $json = $object | ConvertTo-Json
+      $newObject = $json | ConvertFrom-Json
+      Get-Property $newObject 'a', 'b' | Should -Be 1
+    }
+  }
+
   Describe 'Get-Property' {
     It 'Returns passed value if no filters are provided' {
       $x = @{}
@@ -77,6 +149,15 @@ InModuleScope Tianlan {
       (Get-Property $x null -DefaultValue 'not-null') | Should -Be 'not-null'
       { (Get-Property $x null -ThrowOnMiss) } | Should -Throw 'Unable to locate null'
       { (Get-Property $x a, b, c -ThrowOnMiss) } | Should -Throw 'Unable to locate a.b.c'
+    }
+
+    It 'Can return properties' {
+      $x = @{}
+      (Get-Property $x a, b) | Should -BeNullOrEmpty
+      $x = @{ a = 1; b = 2; c =3 }
+      (Get-Property $x -Properties) | Should -Be @('a', 'b', 'c')
+      $x = @{ a = @{ a1 = $null }; b = 2; c =3 }
+      (Get-Property $x 'a' -Properties) | Should -Be @('a1')
     }
   }
 
@@ -161,6 +242,17 @@ InModuleScope Tianlan {
         $test3 | Should -Be 'test3'
         "test"
       } -ScriptBlockArguments @('test1','test2','test3') -Extension '.pfx' | Should -Be "test"
+    }
+  }
+
+  Describe 'Get-CertificateName' {
+    It 'Returns valid certificate names' {
+      Get-CertificateName 't' | Should -Be 'T-Certificate'
+      Get-CertificateName 'test' | Should -Be 'Test-Certificate'
+      Get-CertificateName 'Test' | Should -Be 'Test-Certificate'
+      Get-CertificateName 'test123' | Should -Be 'Test-Certificate'
+      Get-CertificateName 'test 1.2.3' | Should -Be 'Test-Certificate'
+      Get-CertificateName 't e s t 1.2.3' | Should -Be 'Test-Certificate'
     }
   }
 }

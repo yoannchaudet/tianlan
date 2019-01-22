@@ -73,10 +73,72 @@ function Get-Hash {
   $hashString.Substring(0, $Length)
 }
 
+function Add-Property {
+  <#
+  .SYNOPSIS
+  Add a property to an object and return the object.
+
+  .PARAMETER Object
+  The manifest object.
+
+  .PARAMETER Property
+  The property name.
+
+  .PARAMETER Value
+  The value to set.
+  #>
+
+  param (
+    [Parameter(Mandatory, ValueFromPipeline)]
+    [pscustomobject] $InputObject,
+    [Parameter(Mandatory, Position = 0)]
+    [string[]] $Properties,
+    [Parameter(Mandatory)]
+    [AllowNull()]
+    [pscustomobject] $Value
+  )
+
+  function Add-PropertyRecursively {
+    param (
+      [Parameter(Mandatory, ValueFromPipeline)]
+      [pscustomobject] $InputObject,
+      [Parameter(Mandatory, Position = 0)]
+      [string[]] $Properties,
+      [Parameter(Mandatory)]
+      [AllowNull()]
+      [pscustomobject] $Value
+    )
+
+    # Create the first property that is requested if not available on the object
+    $property = $Properties[0]
+    $propertyValue = $InputObject | Select-Object -ExpandProperty $property -ErrorAction 'SilentlyContinue'
+    if (!$propertyValue) {
+      $InputObject | Add-Member -Type 'NoteProperty' -Name $property -Value ([pscustomobject] @{}) -Force
+    }
+
+    # If leaf property is reached, set the value
+    if ($Properties.Length -eq 1) {
+      $InputObject.$property = $Value
+    }
+
+    # Recursively drill down
+    else {
+      Add-PropertyRecursively -InputObject $InputObject.$property -Properties ($Properties | Select-Object -Skip 1) -Value $Value
+    }
+  }
+
+  # Add the property then return the top-level object
+  Add-PropertyRecursively -InputObject $InputObject -Properties $Properties -Value $Value
+  return $InputObject
+}
+
 function Get-Property {
   <#
   .SYNOPSIS
   Return a given property in an object.
+
+  .PARAMETER Object
+  The object to filter.
 
   .PARAMETER Filters
   Optional string array of properties to follow in the object.
@@ -88,15 +150,19 @@ function Get-Property {
 
   .PARAMETER ThrowOnMiss
   Throw an exception if the Filters fail.
+
+  .PARAMETER Properties
+  Return the list of properties of the object instead of the object.
   #>
 
   param (
-    [Parameter(Position=0)]
+    [Parameter(Position = 0)]
     [pscustomobject] $Object,
     [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
     [string[]] $Filters,
     [object] $DefaultValue = $null,
-    [switch] $ThrowOnMiss
+    [switch] $ThrowOnMiss,
+    [switch] $Properties
   )
 
   # Select requested part of the object (if needed)
@@ -117,7 +183,11 @@ function Get-Property {
     }
   }
 
-  # Return the object
+  # Handle properties switch
+  if ($Properties -and $filteredObject) {
+    $filteredObject = ([pscustomobject] $filteredObject).psobject.properties.name
+  }
+
   return $filteredObject
 }
 
@@ -131,7 +201,7 @@ function Get-JsonProperty {
   #>
 
   param (
-    [Parameter(Position=0)]
+    [Parameter(Position = 0)]
     [pscustomobject] $Object,
     [Parameter(Position = 1, ValueFromRemainingArguments = $true)]
     [string[]] $Filters,
@@ -189,4 +259,25 @@ function Use-TemporaryFile {
     # Remove the file
     Remove-Item -Path $private:file -Force -ErrorAction 'SilentlyContinue'
   }
+}
+
+function Get-CertificateName {
+  <#
+  .SYNOPSIS
+  Return a certificate name given a name.
+
+  .PARAMETER Name
+  The name to transform.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $Name
+  )
+
+  # Sanitize the string
+  $Name = $Name -replace '[^a-zA-Z]', ''
+  # Upper case the first character
+  return "$("$($Name[0])".ToUpper())$($Name.Substring(1, $Name.Length - 1))-Certificate"
+
 }

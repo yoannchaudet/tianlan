@@ -53,3 +53,36 @@ Run unit tests for a single file:
 ```
 
 The `Parameters` hashtable is passed directly to [Invoke-Pester](https://github.com/pester/Pester/wiki/Invoke-Pester) (the entry point to the test framework we use).
+
+## Getting started: provision an environment
+
+Ideally, create a new git repository and start the shell from it (or use the `-DeploymentPath` parameter to point at its location on disk).
+
+Declare the environment first:
+
+``` PS
+# You will be prompted for the other parameters
+New-Environment -Name test
+```
+
+If you are planning to deploy an [AKS cluster](https://docs.microsoft.com/en-us/azure/aks/), also create an extra service principal:
+
+``` PS
+New-ServicePrincipal -Environment test -Name aksAdmin
+```
+
+You should see a new `Manifest.json` file at the root of your repository/deployment path. This is keeping track
+of what you will be deploying and where. It is a good idea to version control this file.
+
+Provision your environment with:
+
+``` PS
+Deploy-Environment -Environment test
+```
+
+This script is idempotent (you can run it any time you make a change to the environment). This will provision a Key Vault for the environment
+and upload the self-signed certificates that were generated for your service principals.
+
+Make sure you run `New-Environment`, `New-ServicePrincipal` and `Deploy-Environment` from the same machine. Once the certificates have been
+uploaded, your secrets are safe.
+
