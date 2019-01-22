@@ -258,3 +258,49 @@ function New-AdServicePrincipal {
     ServicePrincipal = $servicePrincipal
   }
 }
+
+function Import-Certificate {
+  <#
+  .SYNOPSIS
+  Import a certificate to Key Vault (if needed).
+
+  .PARAMETER VaultName
+  The name of the vault.
+
+  .PARAMETER Name
+  The name of the certificate.
+
+  .PARAMETER Thumbprint
+  The certificate thumbprint.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $VaultName,
+    [Parameter(Mandatory)]
+    [string] $Name,
+    [Parameter(Mandatory)]
+    [string] $Thumbprint
+  )
+
+  # Get the uploaded certificate if any
+  $uploadedCertificate = Invoke-Retry {
+    Get-AzKeyVaultCertificate -VaultName $VaultName -Name $Name -ErrorAction 'SilentlyContinue'
+  }
+
+  # Upload the certificate if needed
+  if ($uploadedCertificate -and $uploadedCertificate.Certificate.Thumbprint -eq $Thumbprint) {
+    Write-Host "[import-certificate] Certificate $Name already in key vault $VaultName"
+  } else {
+    Write-Host "[import-certificate] Uploading certificate $Name to `key vault $VaultName..." -ForegroundColor 'Blue'
+    $certificate = Get-Certificate -Thumbprint $Thumbprint
+    Invoke-Retry {
+      Import-AzKeyVaultCertificate `
+      -VaultName $VaultName `
+      -Name $Name `
+      -CertificateCollection $certificate
+    }
+  }
+
+
+}

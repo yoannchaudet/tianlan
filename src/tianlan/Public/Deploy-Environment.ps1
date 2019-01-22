@@ -19,16 +19,13 @@ function Deploy-Environment {
   $context = Get-DeploymentContext -Environment $Name
   New-TemplateDeployment -Context $context
 
-  # Upload the certificates
+  # Import the certificates
   $spNames = Get-Manifest 'environments', $Name, 'servicePrincipals' -DefaultValue @() -Properties -ThrowOnMiss
   foreach ($spName in @($spNames)) {
     $spDef = Get-Manifest 'environments', $Name, 'servicePrincipals', $spName
-    $certificate = Get-Certificate -Thumbprint $spDef.certificate.thumbprint
-    Invoke-Retry {
-      Import-AzKeyVaultCertificate `
-        -VaultName $context.Context.VaultName `
-        -Name $spDef.certificate.name `
-        -CertificateCollection $certificate
-    }
+    Import-Certificate `
+      -VaultName $context.Context.VaultName `
+      -Name $spDef.certificate.name `
+      -Thumbprint $spDef.certificate.thumbprint
   }
 }
