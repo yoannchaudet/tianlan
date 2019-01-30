@@ -33,20 +33,30 @@ function New-Environment {
     throw 'Environment already exists'
   }
 
-  # Declare the environment
+  # Declare the environment in Manifest
   $envDef = Get-EnvironmentDefinition -Location $Location -SubscriptionId $SubscriptionId
   $manifest = Get-Manifest
   $manifest = $manifest | Add-Property -Properties 'environments', $Name -Value $envDef
   Set-Manifest $manifest
 
-  # Declare the admin identity
-  New-ServicePrincipal -Environment $Name -Name 'admin'
+  # Login
+  Connect-Azure -SubscriptionId $SubscriptionId
+
+  # Create a new service principal
+  Write-Host "Creating admin service principal..." -ForegroundColor 'Blue'
+  $sp = New-AdServicePrincipal -DisplayName "admin ($Name)" -Admin
+
+  # Declare the service principal in Manifest
+  $certificateName = Get-CertificateName $Name
+  $spDef = Get-ServicePrincipalDefinition -ServicePrincipal $sp -CertificateName $certificateName
+  $manifest = Get-Manifest
+  $manifest = $manifest | Add-Property -Properties 'environments', $Name, 'servicePrincipals', 'admin' -Value $spDef
+  Set-Manifest $manifest
 
   # Assign a role on the service principal
   # Note, we need a retry here because of https://github.com/Azure/azure-powershell/issues/2286
   Write-Host 'Assigning Owner role to service principal (scoped to the subscription)' -ForegroundColor 'Blue'
   $spDef = Get-Manifest 'environments', $Name, 'servicePrincipals', 'admin' -ThrowOnMiss
-  Connect-Azure -SubscriptionId $SubscriptionId
   Invoke-Retry {
     New-AzRoleAssignment `
       -RoleDefinitionName 'Owner' `

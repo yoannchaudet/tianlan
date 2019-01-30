@@ -36,7 +36,7 @@ function Connect-Azure {
     $context = $contexts | Where-Object {
       $_.Account.Type -eq 'ServicePrincipal' `
         -and $_.Account.Id -eq $servicePrincipal.applicationId `
-        -and $_.Subscription.Id -eq $SubscriptionId
+        -and $_.Subscription -and $_.Subscription.Id -eq $SubscriptionId
     }
   }
 
@@ -230,27 +230,101 @@ function New-AdServicePrincipal {
 
   .PARAMETER DisplayName
   The display name.
+
+  .PARAMETER Admin
+  Switch to control wether to give the service principal admin permission
+  on the current tenant.
+
+  When set to true, private APIs are used to grant permissions. The service principal
+  can then be used to provision other service principals (and manage them).
+
+  Note: The current Azure context must have permissions to grant the service principal permissions.
   #>
 
   param (
     [Parameter(Mandatory)]
-    [string] $DisplayName
+    [string] $DisplayName,
+    [switch] $Admin
   )
 
   # Create a new certificate
   $certificate = New-Certificate -CommonName $DisplayName
 
   # Create an application first
-  $application = New-AzADApplication `
-    -DisplayName $DisplayName `
-    -IdentifierUris "https://identity.tianlan.io/$((New-Guid).Guid)" `
-    -CertValue ([System.Convert]::ToBase64String($certificate.GetRawCertData())) `
-    -StartDate $certificate.NotBefore `
-    -EndDate $certificate.NotAfter
+  $application = Invoke-Retry {
+    New-AzADApplication `
+      -DisplayName $DisplayName `
+      -IdentifierUris "https://identity.tianlan.io/$((New-Guid).Guid)" `
+      -CertValue ([System.Convert]::ToBase64String($certificate.GetRawCertData())) `
+      -StartDate $certificate.NotBefore `
+      -EndDate $certificate.NotAfter
+  }
 
   # Then create a service principal
-  $servicePrincipal = New-AzADServicePrincipal `
-    -ApplicationId $application.ApplicationId
+  $servicePrincipal = Invoke-Retry {
+    New-AzADServicePrincipal `
+      -ApplicationId $application.ApplicationId
+  }
+
+  # Make the service principal a tenant admin
+  if ($Admin) {
+    # Get an access token for talking to the Azure Portal
+    $context = Get-AzContext
+    $azureSession = [Microsoft.Azure.Commands.Common.Authentication.AzureSession]
+    $token = $azureSession::Instance.AuthenticationFactory.Authenticate($context.Account, $context.Environment, $context.Tenant.Id, $null, "Never", $null, "74658136-14ec-4630-ad9b-26e160ff0fc6")
+
+    # Grant permissions
+    Write-Debug 'Granting service principal tenant admin permissions...'
+    $response = Invoke-Retry {
+      $payload = @{
+        objectId               = $application.ObjectId
+        requiredResourceAccess = @(
+          @{
+            resourceAppId  = "00000003-0000-0000-c000-000000000000" # Microsoft Graph application
+            resourceAccess = @(
+              @{
+                id   = "19dbc75e-c2e2-444c-a770-ec69d8559fc7" # Directory.ReadWrite.All (Read and write directory data)
+                type = "Role"
+              },
+              @{
+                "id"   = "0e263e50-5827-48a4-b97c-d940288653c7" # Directory.AccessAsUser.All (Access directory as the signed in user)
+                "type" = "Scope"
+              }
+            )
+          },
+          @{
+            resourceAppId  = "00000002-0000-0000-c000-000000000000" # Windows Azure Active Directory
+            resourceAccess = @(
+              @{
+                id   = "824c81eb-e3f8-4ee6-8f6d-de7f50d565b7" # Application.ReadWrite.OwnedBy (Manage apps that this app creates or owns)
+                type = "Role"
+              }
+            )
+          })
+      }
+      Invoke-WebRequest `
+        -Uri "https://main.iam.ad.ext.azure.com/api/RegisteredApplications/$($application.ObjectId)" `
+        -Method "PUT" `
+        -Headers @{"Authorization" = "Bearer $($token.AccessToken)"; "x-ms-client-request-id" = (New-Guid).Guid} `
+        -ContentType "application/json" `
+        -Body ([System.Text.Encoding]::UTF8.GetBytes(($payload | ConvertTo-Json -Depth 100)))
+    }
+    if ($response.StatusCode -ne 200) {
+      throw "Error while granting service principal admin permissions`n$($response | Format-List | Out-String)"
+    }
+
+    # Grant admin consent
+    Write-Debug 'Granting service principal admin consent...'
+    $response = Invoke-Retry {
+      Invoke-WebRequest `
+        -Uri "https://main.iam.ad.ext.azure.com/api/RegisteredApplications/$($servicePrincipal.ApplicationId)/Consent?onBehalfOfAll=true" `
+        -Method "POST" `
+        -Headers @{"Authorization" = "Bearer $($token.AccessToken)"; "x-ms-client-request-id" = (New-Guid).Guid}
+    }
+    if ($response.StatusCode -ne 204) {
+      throw "Error while granting service principal admin consent`n$($response | Format-List | Out-String)"
+    }
+  }
 
   # Return a reference object
   return @{
@@ -291,14 +365,15 @@ function Import-Certificate {
   # Upload the certificate if needed
   if ($uploadedCertificate -and $uploadedCertificate.Certificate.Thumbprint -eq $Thumbprint) {
     Write-Host "[import-certificate] Certificate $Name already in key vault $VaultName"
-  } else {
+  }
+  else {
     Write-Host "[import-certificate] Uploading certificate $Name to `key vault $VaultName..." -ForegroundColor 'Blue'
     $certificate = Get-Certificate -Thumbprint $Thumbprint
     Invoke-Retry {
       Import-AzKeyVaultCertificate `
-      -VaultName $VaultName `
-      -Name $Name `
-      -CertificateCollection $certificate
+        -VaultName $VaultName `
+        -Name $Name `
+        -CertificateCollection $certificate
     }
   }
 
