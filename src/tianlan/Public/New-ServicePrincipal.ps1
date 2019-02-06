@@ -29,18 +29,21 @@ function New-ServicePrincipal {
   }
 
   # Login
-  $envDef = Get-Manifest 'environments' $Environment -ThrowOnMiss
-  Connect-Azure -SubscriptionId $envDef.subscriptionId
+  Connect-Azure -Environment $Environment
 
   # Create a new service principal
-  Write-Host "Creating service principal..." -ForegroundColor 'Blue'
+  Write-Host 'Creating service principal...' -ForegroundColor 'Blue'
   $sp = New-AdServicePrincipal -DisplayName "$Name ($Environment)"
   $sp.ServicePrincipal
 
   # Update manifest
+  Write-Host 'Declaring service principal...' -ForegroundColor 'Blue'
   $certificateName = Get-CertificateName $Name
   $spDef = Get-ServicePrincipalDefinition -ServicePrincipal $sp -CertificateName $certificateName
   $manifest = Get-Manifest
   $manifest = $manifest | Add-Property -Properties 'environments', $Environment, 'servicePrincipals', $Name -Value $spDef
   Set-Manifest $manifest
+
+  # Logging
+  Write-Host 'Service principal created successfuly!'
 }

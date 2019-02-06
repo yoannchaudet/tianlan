@@ -31,8 +31,12 @@ function New-DeploymentUnit {
   }
 
   # Declare the environment
+  Write-Host 'Declaring deployment unit...' -ForegroundColor 'Blue'
   $duDef = Get-DeploymentUnitDefinition -Location $Location
   $manifest = Get-Manifest
   $manifest = $manifest | Add-Property -Properties 'environments', $Environment, 'deploymentUnits', $Name -Value $duDef
   Set-Manifest $manifest
+
+  # Logging
+  Write-Host 'Deployment unit declared successfuly!'
 }
