@@ -16,9 +16,9 @@ The task to run.
 .PARAMETER Parameters
 Extra parameters to pass to the task.
 
-.PARAMETERS JsonParameters
-Extra parameters to pass to the task (as a JSON object). This variant can be used when passing a PowerShell hashtable
-(with -Parameters) is not convenient.
+.PARAMETER EncodedParameter
+Extra parameters to pass to the task (as a base64 encoded JSON object). This variant can be used when passing a
+PowerShell hashtable (with -Parameters) is not convenient.
 #>
 
 [CmdletBinding(DefaultParametersetname = 'HashTableParameters')]
@@ -28,8 +28,8 @@ param (
   [string] $Task = 'Build',
   [Parameter(ParameterSetName = 'HashTableParameters')]
   [hashtable] $Parameters = @{},
-  [Parameter(ParameterSetName = 'JsonParameters')]
-  [string] $JsonParameters = '{}'
+  [Parameter(ParameterSetName = 'EncodedParameters')]
+  [string] $EncodedParameters = '{}'
 )
 
 # Init
@@ -43,9 +43,10 @@ function Import-Modules() {
   Import-Module -Name (Join-Path $PSScriptRoot 'src/tianlan/Tianlan.psd1')
 }
 
-# Handle JSON parameters deserialization if needed
-if ($PsCmdlet.ParameterSetName -eq 'JsonParameters') {
-  $Parameters = $JsonParameters | ConvertFrom-Json -AsHashtable
+# Handle encoded parameters deserialization if needed
+if ($PsCmdlet.ParameterSetName -eq 'EncodedParameters') {
+  $decodedParameters = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($EncodedParameters))
+  $Parameters = $decodedParameters | ConvertFrom-Json -AsHashtable
 }
 
 # Handle code coverage

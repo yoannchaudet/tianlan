@@ -1,5 +1,14 @@
 FROM mcr.microsoft.com/powershell
 
+# Install docker
+RUN apt-get update -qq && apt-get install -qqy \
+  apt-transport-https \
+  ca-certificates \
+  curl \
+  lxc \
+  iptables \
+  && curl -sSL https://get.docker.com/ | sh
+
 # Change shell
 SHELL ["pwsh", "-Command"]
 

@@ -32,10 +32,19 @@ if ($LASTEXITCODE -ne 0) {
   throw 'Image build failed'
 }
 
+# Configure docker-in-docker
+$extraOptions = ""
+if ($IsWindows) {
+  $extraOptions = "-e DOCKER_HOST='tcp://docker.for.win.localhost:2375'"
+} else {
+  $extraOptions = "--volume /var/run/docker.sock:/var/run/docker.sock "
+}
+
 # Run the build script
-& $docker run `
-  --volume ${PSScriptRoot}:/build `
-  --volume ${BuildVolumePath}:/build-tmp `
-  --workdir /build `
-  --rm `
-  $imageName /build/build.ps1 $Parameters
+$expression = "& '$docker' run "
+$expression += "--volume ${PSScriptRoot}:/build "
+$expression += "--volume ${BuildVolumePath}:/build-tmp "
+$expression += "--workdir /build "
+$expression += "$extraOptions "
+$expression += "--rm $imageName /build/build.ps1 $Parameters"
+Invoke-Expression $expression
