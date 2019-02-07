@@ -60,7 +60,7 @@ function Invoke-Tianlan {
   }
 
   # Create folder to store the container's userprofile
-  $hostProfile = (Join-Path $env:USERPROFILE '.tianlan')
+  $hostProfile = (Join-Path ~ '.tianlan')
   New-Item -ItemType 'Directory' -Path $hostProfile -Force | Out-Null
 
   # Get the module folder
