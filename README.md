@@ -15,7 +15,7 @@ For dependencies, two solutions:
 
 2. Install the dependencies one by one (this is preferred if you are contributing to the project):
 
-   - Pester 4.4.3+ (for tests only)
+   - Pester 4.6.0+ (for tests only)
    - Az 1.0.0 (for runtime)
    - SelfSignedCertificate 0.0.4 (for runtime)
    - WIP: Add link, manage this differently
@@ -53,6 +53,9 @@ Run unit tests for a single file:
 
 The `Parameters` hashtable is passed directly to [Invoke-Pester](https://github.com/pester/Pester/wiki/Invoke-Pester)
 (the entry point to the test framework we use).
+
+Note, you can also run the tests in a container (where all dependencies are installed) by using the `builddocker.ps1`
+which takes the same parameters.
 
 ## Getting started: provision an environment
 
