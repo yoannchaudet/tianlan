@@ -116,6 +116,10 @@ function Invoke-Tianlan {
       }
 
       # Start the image (or shell)
+      $interactiveOptions = '-it'
+      if ($env:Command) {
+        $interactiveOptions = '-t'
+      }
       & $docker run `
         --volume ${hostProfile}:/root/.tianlan `
         --volume ${moduleFolder}:/tianlan/module `
@@ -123,7 +127,7 @@ function Invoke-Tianlan {
         --volume tianlan-dotnet:/root/.dotnet:rw `
         -e DeploymentPath=$(ConvertTo-Base64 /tianlan/deployment) `
         -e Command=$env:Command `
-        --rm -it $imageName $args
+        --rm $interactiveOptions $imageName $args
     }
   }
 }
