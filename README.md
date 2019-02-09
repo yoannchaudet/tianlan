@@ -13,7 +13,7 @@ Until the project is published to the gallery, install dependencies this way:
 
 - Install Pester first (for unit tests)
   ``` PS
-  Install-Module -Name Pester -Scope CurrentUser -MinimumVersion 4.6.0
+  Install-Module -Name Pester -MinimumVersion 4.6.0 -Scope CurrentUser
   ```
 - Install other dependencies with the build script
   ``` PS
