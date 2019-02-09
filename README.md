@@ -3,6 +3,10 @@
 Tiānlán (天蓝) which translates to azure (the color) in Chinese is a simple deployment system for the cloud provider of
 the [same name](https://azure.microsoft.com/en-us/).
 
+## Continous Integration
+
+[![Build status](https://dev.azure.com/yoannchaudet/tianlan/_apis/build/status/tianlan)](https://dev.azure.com/yoannchaudet/tianlan/_build/latest?definitionId=1)
+
 ## Requirements
 
 The project works on Windows, Linux and macOS.

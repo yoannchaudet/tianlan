@@ -75,6 +75,7 @@ switch ($Task) {
   }
 
   'Test' {
+    $env:PSModulePath = "$(Join-Path $PSScriptRoot 'src/tianlan/Dependencies')$([IO.Path]::PathSeparator)$($env:PSModulePath)"
     Import-Modules
     Invoke-Pester @Parameters
   }
