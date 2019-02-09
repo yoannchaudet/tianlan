@@ -4,12 +4,12 @@ Describe 'Invoke-Tianlan' {
   }
 
   It 'Propagates custom deployment path (mode = Host)' {
-    Invoke-Tianlan -Mode 'Host' -DeploymentPath $env:TEMP -Command 'Get-DeploymentPath' `
-      | Should -Contain $env:TEMP
+    Invoke-Tianlan -Mode 'Host' -DeploymentPath ([System.IO.Path]::GetTempPath()) -Command 'Get-DeploymentPath' `
+      | Should -Contain ([System.IO.Path]::GetTempPath())
   }
 
   It 'Propagates custom deployment path (mode = Docker)' {
-    (Invoke-Tianlan -Mode 'Docker' -DeploymentPath $env:TEMP -Command 'Get-DeploymentPath').Contains('/tianlan/deployment') `
+    (Invoke-Tianlan -Mode 'Docker' -DeploymentPath ([System.IO.Path]::GetTempPath()) -Command 'Get-DeploymentPath').Contains('/tianlan/deployment') `
       | Should -BeTrue
   }
 
