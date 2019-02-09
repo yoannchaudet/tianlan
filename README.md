@@ -54,9 +54,6 @@ Run unit tests for a single file:
 The `Parameters` hashtable is passed directly to [Invoke-Pester](https://github.com/pester/Pester/wiki/Invoke-Pester)
 (the entry point to the test framework we use).
 
-Note, you can also run the tests in a container (where all dependencies are installed) by using the `builddocker.ps1`
-which takes the same parameters.
-
 ## Getting started: provision an environment
 
 Ideally, create a new git repository and start the shell from it (or use the `-DeploymentPath` parameter to point at its
