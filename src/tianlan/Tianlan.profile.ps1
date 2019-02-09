@@ -13,7 +13,10 @@ Excepts the following environment variables:
   When provided the shell exits directly.
 #>
 
-# Import the module
+# Set local dependencies in scope
+$env:PSModulePath = "$(Join-Path $PSScriptRoot 'Dependencies')$([IO.Path]::PathSeparator)$($env:PSModulePath)"
+
+# Import the Tianlan module
 Import-Module -Name (Join-Path $PSScriptRoot 'Tianlan.psd1')
 
 # Set the deployment path

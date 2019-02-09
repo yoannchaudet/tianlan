@@ -9,16 +9,16 @@ The project works on Windows, Linux and macOS.
 
 Required runtime: [PowerShell Core (6.x)](https://github.com/PowerShell/PowerShell).
 
-For dependencies, two solutions:
+Until the project is published to the gallery, install dependencies this way:
 
-1. Install Docker and stop there (this is the preferred route if you are not familiar with PowerShell)
-
-2. Install the dependencies one by one (this is preferred if you are contributing to the project):
-
-   - Pester 4.6.0+ (for tests only)
-   - Az 1.0.0 (for runtime)
-   - SelfSignedCertificate 0.0.4 (for runtime)
-   - WIP: Add link, manage this differently
+- Install Pester first (for unit tests)
+  ``` PS
+  Install-Module -Name Pester -Scope CurrentUser -MinimumVersion 4.6.0
+  ```
+- Install other dependencies with the build script
+  ``` PS
+  ./build.ps1
+  ```
 
 ## Getting started: run the shell
 
