@@ -17,12 +17,10 @@ The task to run.
 Extra parameters to pass to the task.
 #>
 
-[CmdletBinding(DefaultParametersetname = 'HashTableParameters')]
 param (
   [ValidateSet('Build', 'Test', 'TestCodeCoverage', 'Import')]
   [Parameter(Position=0)]
   [string] $Task = 'Build',
-  [Parameter(ParameterSetName = 'HashTableParameters')]
   [hashtable] $Parameters = @{}
 )
 
