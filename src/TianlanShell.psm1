@@ -114,7 +114,6 @@ function Invoke-Tianlan {
       if (!($(& $docker volume ls --format '{{.Name}}') | Where-Object { $_ -eq 'tianlan-dotnet' })) {
         & $docker volume create --driver=local tianlan-dotnet
       }
-      & $docker volume inspect tianlan-dotnet
 
       # Start the image (or shell)
       $interactiveOptions = '-it'
@@ -128,7 +127,6 @@ function Invoke-Tianlan {
         --volume tianlan-dotnet:/root/.dotnet:rw `
         -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
         -e Command="${env:Command}" `
-        -e TERM='xterm' `
         --rm $interactiveOptions $imageName $args
     }
   }

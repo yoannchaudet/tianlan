@@ -11,6 +11,7 @@ Describe 'Invoke-Tianlan' {
   It 'Propagates custom deployment path (mode = Docker)' {
     Invoke-Tianlan -Mode 'Docker' -DeploymentPath ([System.IO.Path]::GetTempPath()) -Command 'Get-DeploymentPath | Out-String' `
       | Where-Object { $_ } `
+      | ForEach-Object { $_ -Replace '\x1b\[[0-9;]*m','' } `
       | Should -Match '/tianlan/deployment'
   }
 
@@ -27,6 +28,7 @@ Describe 'Invoke-Tianlan' {
       | Should -Match 'Tianlan'
     Invoke-Tianlan -Mode 'Docker' -Command '(Get-Module -Name TianlanShell).Name | Out-String' `
       | Where-Object { $_ } `
+      | ForEach-Object { $_ -Replace '\x1b\[[0-9;]*m','' } `
       | Should -Not -Match 'TianlanShell'
   }
 }
