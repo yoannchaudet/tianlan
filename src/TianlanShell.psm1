@@ -125,8 +125,8 @@ function Invoke-Tianlan {
         --volume ${moduleFolder}:/tianlan/module `
         --volume ${DeploymentPath}:/tianlan/deployment `
         --volume tianlan-dotnet:/root/.dotnet:rw `
-        -e DeploymentPath=$(ConvertTo-Base64 /tianlan/deployment) `
-        -e Command=$env:Command `
+        -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
+        -e Command="${env:Command}" `
         --rm $interactiveOptions $imageName $args
     }
   }
