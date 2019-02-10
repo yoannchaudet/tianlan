@@ -16,7 +16,7 @@ function ConvertTo-Base64 {
   Use UTF8 by default. Pwsh when encoding commands expects "Unicode" to be used somehow.
   #>
   param (
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string] $InputValue,
     [String] $Encoding = 'UTF8'
   )
@@ -65,6 +65,9 @@ function Invoke-Tianlan {
 
   # Get the module folder
   $moduleFolder = Join-Path $PSScriptRoot 'tianlan'
+  # Get the temp folder
+  $tempPath = [System.IO.Path]::GetTempPath()
+  $containerOutputFile = "$((New-Guid).Guid).tianlan.out"
 
   # Prepare args for the pwsh command to run
   $args = @('-NoProfile')
@@ -73,14 +76,16 @@ function Invoke-Tianlan {
   }
   if ($Mode -eq 'Host') {
     $args += @('-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1')")")
-  } else {
+  }
+  else {
     $args += @('-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode ". /tianlan/module/Tianlan.profile.ps1")")
   }
 
   # Prepare environment
   if ($Command) {
     $env:Command = ConvertTo-Base64 $Command
-  } else {
+  }
+  else {
     $env:Command = ''
   }
 
@@ -94,7 +99,13 @@ function Invoke-Tianlan {
       $env:DeploymentPath = ConvertTo-Base64 $DeploymentPath
 
       # Start the shell
-      & $pwsh $args
+      $rawOutput = & $pwsh $args
+      if ($LASTEXITCODE -ne 0) {
+        $rawOutput | Out-String | Write-Error
+      }
+      else {
+        $rawOutput | Write-Output
+      }
     }
 
     'Docker' {
@@ -112,7 +123,7 @@ function Invoke-Tianlan {
       # This is used to persist the .dotnet profile folder
       # It is mounted as a local volume because it is sensitive to file permissions and required (e.g. on a Windows host)
       if (!($(& $docker volume ls --format '{{.Name}}') | Where-Object { $_ -eq 'tianlan-dotnet' })) {
-        & $docker volume create --driver=local tianlan-dotnet
+        & $docker volume create --driver=local tianlan-dotnet | Out-Null
       }
 
       # Start the image (or shell)
@@ -120,14 +131,28 @@ function Invoke-Tianlan {
       if ($env:Command) {
         $interactiveOptions = '-t'
       }
-      & $docker run `
-        --volume ${hostProfile}:/root/.tianlan `
-        --volume ${moduleFolder}:/tianlan/module `
-        --volume ${DeploymentPath}:/tianlan/deployment `
-        --volume tianlan-dotnet:/root/.dotnet:rw `
-        -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
-        -e Command="${env:Command}" `
-        --rm $interactiveOptions $imageName $args
+      try {
+        $rawOutput = & $docker run `
+          --volume ${hostProfile}:/root/.tianlan `
+          --volume ${moduleFolder}:/tianlan/module `
+          --volume ${DeploymentPath}:/tianlan/deployment `
+          --volume ${tempPath}:/tianlan/tmp `
+          --volume tianlan-dotnet:/root/.dotnet:rw `
+          -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
+          -e Command="${env:Command}" `
+          -e CommandOutputPath="$(Join-Path '/tianlan/tmp' $containerOutputFile)" `
+          --rm $interactiveOptions $imageName $args
+        if ($LASTEXITCODE -ne 0) {
+          $rawOutput | Out-String | Write-Error
+        }
+        else {
+          # (Explicitly) forward the output
+          Get-Content -Path (Join-Path $tempPath $containerOutputFile) -Encoding 'UTF8' -Raw | Write-Output
+        }
+      }
+      finally {
+        Remove-Item -Path (Join-Path $tempPath $containerOutputFile) -Force -ErrorAction 'SilentlyContinue'
+      }
     }
   }
 }
