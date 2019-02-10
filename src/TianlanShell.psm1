@@ -99,12 +99,15 @@ function Invoke-Tianlan {
       $env:DeploymentPath = ConvertTo-Base64 $DeploymentPath
 
       # Start the shell
-      $rawOutput = & $pwsh $args
-      if ($LASTEXITCODE -ne 0) {
-        $rawOutput | Out-String | Write-Error
-      }
-      else {
+      try {
+        $rawOutput = & $pwsh $args
+        if ($LASTEXITCODE -ne 0) {
+          throw $rawOutput
+        }
         $rawOutput | Write-Output
+      }
+      catch {
+        $_ | Out-String | Write-Error
       }
     }
 
