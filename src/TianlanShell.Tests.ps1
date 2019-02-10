@@ -29,12 +29,12 @@ Describe 'Invoke-Tianlan' {
   }
 
   It 'Propagates exceptions (mode = Host)' {
-    { Invoke-Tianlan -Mode 'Host' -Command 'throw x' } `
+    { Invoke-Tianlan -Mode 'Host' -Command 'throw "x"' } `
       | Should -Throw 'x'
   }
 
   It 'Propagates exceptions (mode = Docker)' {
-    { Invoke-Tianlan -Mode 'Docker' -Command 'throw x' } `
+    { Invoke-Tianlan -Mode 'Docker' -Command 'throw "x"' } `
       | Should -Throw 'x'
   }
 }
