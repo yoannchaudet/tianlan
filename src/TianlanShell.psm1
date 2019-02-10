@@ -75,10 +75,10 @@ function Invoke-Tianlan {
     $args += '-NoExit'
   }
   if ($Mode -eq 'Host') {
-    $args += @('-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode ". $(Join-Path $moduleFolder 'Tianlan.profile.ps1')")")
+    $args += @('-OutputFormat', 'Text', '-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode "& { . $(Join-Path $moduleFolder 'Tianlan.profile.ps1') }")")
   }
   else {
-    $args += @('-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode ". /tianlan/module/Tianlan.profile.ps1")")
+    $args += @('-OutputFormat', 'Text', '-EncodedCommand', "$(ConvertTo-Base64 -Encoding Unicode "& { . /tianlan/module/Tianlan.profile.ps1 }")")
   }
 
   # Prepare environment
