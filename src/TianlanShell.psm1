@@ -112,8 +112,9 @@ function Invoke-Tianlan {
       # This is used to persist the .dotnet profile folder
       # It is mounted as a local volume because it is sensitive to file permissions and required (e.g. on a Windows host)
       if (!($(& $docker volume ls --format '{{.Name}}') | Where-Object { $_ -eq 'tianlan-dotnet' })) {
-        docker volume create --driver=local tianlan-dotnet
+        & $docker volume create --driver=local tianlan-dotnet
       }
+      & $docker volume inspect tianlan-dotnet
 
       # Start the image (or shell)
       $interactiveOptions = '-it'
@@ -127,6 +128,7 @@ function Invoke-Tianlan {
         --volume tianlan-dotnet:/root/.dotnet:rw `
         -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
         -e Command="${env:Command}" `
+        -e TERM='xterm' `
         --rm $interactiveOptions $imageName $args
     }
   }
