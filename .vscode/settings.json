@@ -3,5 +3,8 @@
   "editor.detectIndentation": false,
   "editor.insertSpaces": true,
   "files.eol": "\n",
-  "files.trimTrailingWhitespace": true
+  "files.trimTrailingWhitespace": true,
+  "search.exclude": {
+    "src/tianlan/Dependencies": true
+  }
 }
