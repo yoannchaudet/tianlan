@@ -16,11 +16,11 @@ Required runtime: [PowerShell Core (6.x)](https://github.com/PowerShell/PowerShe
 Until the project is published to the gallery, install dependencies this way:
 
 - Install Pester first (for unit tests)
-  ``` PS
+  ```pwsh
   Install-Module -Name Pester -MinimumVersion 4.6.0 -Scope CurrentUser
   ```
 - Install other dependencies with the build script
-  ``` PS
+  ```pwsh
   ./build.ps1
   ```
 
@@ -33,7 +33,7 @@ PowerShell module with all the functionalities of Tiānlán. This indirection is
 
 In order to start the shell (from the root of the repository):
 
-``` PS
+```pwsh
 # Start the shell in a container:
 ./build.ps1 Import; Invoke-Tianlan -Mode Docker
 
@@ -45,13 +45,13 @@ In order to start the shell (from the root of the repository):
 
 From the root of the repository:
 
-``` PS
+```pwsh
 ./build.ps1 Test
 ```
 
 Run unit tests for a single file:
 
-``` PS
+```pwsh
 ./build.ps1 Test -Parameters @{ Path = 'src/tianlan/Private/Manifest.Tests.ps1' }
 ```
 
@@ -65,7 +65,7 @@ location on disk).
 
 Create the environment first, this step shall run once only:
 
-``` PS
+```pwsh
 # You will be prompted for the other parameters
 New-Environment -Name test
 ```
@@ -73,7 +73,7 @@ New-Environment -Name test
 If you are planning to deploy an [AKS cluster](https://docs.microsoft.com/en-us/azure/aks/), also create an extra
 service principal:
 
-``` PS
+```pwsh
 New-ServicePrincipal -Environment test -Name aksAdmin
 ```
 
@@ -82,7 +82,7 @@ you will be deploying and where. It is a good idea to version control this file.
 
 Provision your environment with:
 
-``` PS
+```pwsh
 Deploy-Environment -Name test
 ```
 
