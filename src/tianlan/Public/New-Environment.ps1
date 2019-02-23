@@ -48,7 +48,7 @@ function New-Environment {
   $sp = New-AdServicePrincipal -DisplayName "admin ($Name)" -Admin
 
   # Declare the service principal in Manifest
-  $certificateName = Get-CertificateName $Name
+  $certificateName = Get-CertificateName 'admin'
   $spDef = Get-ServicePrincipalDefinition -ServicePrincipal $sp -CertificateName $certificateName
   $manifest = Get-Manifest
   $manifest = $manifest | Add-Property -Properties 'environments', $Name, 'servicePrincipals', 'admin' -Value $spDef
@@ -63,7 +63,7 @@ function New-Environment {
       -RoleDefinitionName 'Owner' `
       -ApplicationId ($spDef.applicationId) `
       -Scope "/subscriptions/$SubscriptionId"
-  } -RetryDelay { 10 }
+  } -RetryDelay { 10 } -MaxRetries 5
 
   # Logging
   Write-Host 'Environment created successfuly!'
