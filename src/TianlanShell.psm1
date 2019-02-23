@@ -100,11 +100,19 @@ function Invoke-Tianlan {
 
       # Start the shell
       try {
-        $rawOutput = & $pwsh $args
-        if ($LASTEXITCODE -ne 0) {
-          throw $rawOutput
+        # Run the shell directly (interactive)
+        if (!$Command) {
+          & $pwsh $args
         }
-        $rawOutput | Write-Output
+
+        # Run the shell and collect the output (non-interactive)
+        else {
+          $rawOutput = & $pwsh $args
+          if ($LASTEXITCODE -ne 0) {
+            throw $rawOutput
+          }
+          $rawOutput | Write-Output
+        }
       }
       catch {
         $_ | Out-String | Write-Error
@@ -135,22 +143,39 @@ function Invoke-Tianlan {
         $interactiveOptions = '-t'
       }
       try {
-        $rawOutput = & $docker run `
-          --volume ${hostProfile}:/root/.tianlan `
-          --volume ${moduleFolder}:/tianlan/module `
-          --volume ${DeploymentPath}:/tianlan/deployment `
-          --volume ${tempPath}:/tianlan/tmp `
-          --volume tianlan-dotnet:/root/.dotnet:rw `
-          -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
-          -e Command="${env:Command}" `
-          -e CommandOutputPath="$(Join-Path '/tianlan/tmp' $containerOutputFile)" `
-          --rm $interactiveOptions $imageName $args
-        if ($LASTEXITCODE -ne 0) {
-          $rawOutput | Out-String | Write-Error
+        # Run the shell directly (interactive)
+        if (!$Command) {
+          & $docker run `
+            --volume ${hostProfile}:/root/.tianlan `
+            --volume ${moduleFolder}:/tianlan/module `
+            --volume ${DeploymentPath}:/tianlan/deployment `
+            --volume ${tempPath}:/tianlan/tmp `
+            --volume tianlan-dotnet:/root/.dotnet:rw `
+            -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
+            -e Command="${env:Command}" `
+            -e CommandOutputPath="$(Join-Path '/tianlan/tmp' $containerOutputFile)" `
+            --rm $interactiveOptions $imageName $args
         }
+
+        # Run the shell and collect the output (non-interactive)
         else {
-          # (Explicitly) forward the output
-          Get-Content -Path (Join-Path $tempPath $containerOutputFile) -Encoding 'UTF8' -Raw | Write-Output
+          $rawOutput = & $docker run `
+            --volume ${hostProfile}:/root/.tianlan `
+            --volume ${moduleFolder}:/tianlan/module `
+            --volume ${DeploymentPath}:/tianlan/deployment `
+            --volume ${tempPath}:/tianlan/tmp `
+            --volume tianlan-dotnet:/root/.dotnet:rw `
+            -e DeploymentPath="$(ConvertTo-Base64 '/tianlan/deployment')" `
+            -e Command="${env:Command}" `
+            -e CommandOutputPath="$(Join-Path '/tianlan/tmp' $containerOutputFile)" `
+            --rm $interactiveOptions $imageName $args
+          if ($LASTEXITCODE -ne 0) {
+            $rawOutput | Out-String | Write-Error
+          }
+          else {
+            # (Explicitly) forward the output
+            Get-Content -Path (Join-Path $tempPath $containerOutputFile) -Encoding 'UTF8' -Raw | Write-Output
+          }
         }
       }
       finally {

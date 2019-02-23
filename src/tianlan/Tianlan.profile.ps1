@@ -39,7 +39,7 @@ if ($env:Command) {
 
 # Prepare interactive shell
 else {
-  function prompt() {
+  function global:prompt() {
     <#
     .SYNOPSIS Define a custom prompt.
     #>
