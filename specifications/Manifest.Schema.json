@@ -45,6 +45,10 @@
         "subscriptionId": {
           "$ref": "#/definitions/subscriptionId"
         },
+        "adminGroupId": {
+          "type": "string",
+          "description": "Identifier of the AAD admin group for the environment.",
+        },
         "servicePrincipals": {
           "description": "Environment service principals (= automation users).",
           "type": "object",
@@ -80,7 +84,8 @@
       "required": [
         "subscriptionId",
         "location",
-        "servicePrincipals"
+        "servicePrincipals",
+        "adminGroupId"
       ]
     },
     "location": {

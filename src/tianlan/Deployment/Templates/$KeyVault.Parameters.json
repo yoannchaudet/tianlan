@@ -7,6 +7,9 @@
     },
     "adminServicePrincipal": {
       "value": $(Get-Manifest 'environments', $(Get-Context 'Environment' -Raw), 'servicePrincipals', 'admin')
+    },
+    "adminGroupId": {
+      "value": $(Get-Manifest 'environments', $(Get-Context 'Environment' -Raw), 'adminGroupId')
     }
   }
 }

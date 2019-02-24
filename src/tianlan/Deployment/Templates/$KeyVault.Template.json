@@ -15,6 +15,9 @@
     },
     "adminServicePrincipal": {
       "type": "object"
+    },
+    "adminGroupId": {
+      "type": "string"
     }
   },
   "resources": [
@@ -31,7 +34,7 @@
         "accessPolicies": [
           {
             "tenantId": "[parameters('adminServicePrincipal').tenantId]",
-            "objectId": "[parameters('adminServicePrincipal').id]",
+            "objectId": "[parameters('adminGroupId')]",
             "permissions": {
               "certificates": [
                 "list",

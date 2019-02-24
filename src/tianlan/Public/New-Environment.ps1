@@ -33,38 +33,48 @@ function New-Environment {
     throw 'Environment already exists'
   }
 
-  # Declare the environment in Manifest
-  Write-Host 'Declaring environment...' -ForegroundColor 'Blue'
-  $envDef = Get-EnvironmentDefinition -Location $Location -SubscriptionId $SubscriptionId
-  $manifest = Get-Manifest
-  $manifest = $manifest | Add-Property -Properties 'environments', $Name -Value $envDef
-  Set-Manifest $manifest
-
   # Login
-  Connect-Azure -SubscriptionId $SubscriptionId
+  Invoke-Step 'Authenticating' {
+    Connect-Azure -SubscriptionId $SubscriptionId
+  }
 
   # Create a new service principal
-  Write-Host 'Creating admin service principal...' -ForegroundColor 'Blue'
-  $sp = New-AdServicePrincipal -DisplayName "admin ($Name)" -Admin
-
-  # Declare the service principal in Manifest
-  $certificateName = Get-CertificateName 'admin'
-  $spDef = Get-ServicePrincipalDefinition -ServicePrincipal $sp -CertificateName $certificateName
-  $manifest = Get-Manifest
-  $manifest = $manifest | Add-Property -Properties 'environments', $Name, 'servicePrincipals', 'admin' -Value $spDef
-  Set-Manifest $manifest
+  $sp = Invoke-Step 'Creating admin service principal' {
+    New-AdServicePrincipal -DisplayName "admin ($Name)" -Admin
+  }
 
   # Assign a role on the service principal
   # Note, we need a retry here because of https://github.com/Azure/azure-powershell/issues/2286
-  Write-Host 'Assigning Owner role to admin service principal...' -ForegroundColor 'Blue'
-  $spDef = Get-Manifest 'environments', $Name, 'servicePrincipals', 'admin' -ThrowOnMiss
-  Invoke-Retry {
-    New-AzRoleAssignment `
-      -RoleDefinitionName 'Owner' `
-      -ApplicationId ($spDef.applicationId) `
-      -Scope "/subscriptions/$SubscriptionId"
-  } -RetryDelay { 10 } -MaxRetries 5
+  Invoke-Step 'Assigning admin service principal Owner role on the subscription' {
+    Invoke-Retry {
+      New-AzRoleAssignment `
+        -RoleDefinitionName 'Owner' `
+        -ApplicationId ($sp.ServicePrincipal.ApplicationId) `
+        -Scope "/subscriptions/$SubscriptionId"
+    } -RetryDelay { 10 } -MaxRetries 5
+  }
 
-  # Logging
-  Write-Host 'Environment created successfuly!'
+  # Create an admin group and add the service principal to it
+  $group = Invoke-Step 'Creating admin AD group' {
+    New-AzAdGroup -DisplayName "Admin Group ($Name)" -MailNickname "admin_$Name" | Tee-Object -Variable 'group'
+    Add-AzADGroupMember -MemberObjectId $sp.ServicePrincipal.Id -TargetGroupObjectId $group.Id
+  }
+
+  # Update the manifest
+  Invoke-Step 'Updating manifest' {
+    # Get current manifest
+    $manifest = Get-Manifest
+
+    # Declare environment
+    $envDef = Get-EnvironmentDefinition -Location $Location -SubscriptionId $SubscriptionId -AdminGroupId $group.Id
+    $manifest = $manifest | Add-Property -Properties 'environments', $Name -Value $envDef
+
+    # Declare service principal
+    $certificateName = Get-CertificateName 'admin'
+    $spDef = Get-ServicePrincipalDefinition -ServicePrincipal $sp -CertificateName $certificateName
+    $manifest = $manifest | Add-Property -Properties 'environments', $Name, 'servicePrincipals', 'admin' -Value $spDef
+
+    # Save manifest
+    Set-Manifest $manifest
+  }
 }

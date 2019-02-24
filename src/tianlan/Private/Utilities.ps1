@@ -281,3 +281,110 @@ function Get-CertificateName {
   return "$("$($Name[0])".ToUpper())$($Name.Substring(1, $Name.Length - 1))-Certificate"
 
 }
+
+function Invoke-Step {
+  <#
+  .SYNOPSIS
+  Invoke a logical step and beautify logging around it.
+
+  .PARAMETER _Name
+  The step name.
+
+  .PARAMETER _ScriptBlock
+  The script block to execute.
+
+  .PARAMETER _Style
+  The style to use for logging the step name.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $_Name,
+    [Parameter(Mandatory)]
+    [scriptblock] $_ScriptBlock,
+    [pscustomobject] $_Style = @{
+      RunningMarker   = @{
+        Text            = '[ ]'
+        BackgroundColor = 'Black'
+        ForegroundColor = 'White'
+      }
+      CompletedMarker = @{
+        Text            = '[+]'
+        BackgroundColor = 'Black'
+        ForegroundColor = 'Green'
+      }
+      ErrorMarker     = @{
+        Text            = '[!]'
+        BackgroundColor = 'Black'
+        ForegroundColor = 'Red'
+      }
+    }
+  )
+
+  function Write-Marker {
+    param (
+      [Parameter(Mandatory)]
+      [pscustomobject] $Marker
+    )
+    Write-Host (' ' * ($script:invokeStepDepth * 2)) -NoNewline
+    Write-Host $Marker.Text `
+      -ForegroundColor $Marker.ForegroundColor `
+      -BackgroundColor $Marker.BackgroundColor `
+      -NoNewline
+    Write-Host " $_Name" `
+      -ForegroundColor $Marker.ForegroundColor `
+      -BackgroundColor $Marker.BackgroundColor
+  }
+
+  function Reset-CursorPosition {
+    param (
+      [Parameter(Mandatory)]
+      [scriptblock] $ScriptBlock
+    )
+    $cursorPosition = $Host.UI.RawUI.CursorPosition
+    try {
+      & $ScriptBlock
+    }
+    finally {
+      $Host.UI.RawUI.CursorPosition = $cursorPosition
+    }
+  }
+
+  # Increment invocation depth
+  if (Get-Variable 'invokeStepDepth' -ErrorAction 'SilentlyContinue') {
+    $script:invokeStepDepth++
+  }
+  else {
+    $script:invokeStepDepth = 0
+  }
+
+  # Start step logging
+  $lastCursorPosition = $Host.UI.RawUI.CursorPosition
+  Write-Marker $_Style.RunningMarker
+
+  # Execute the step
+  try {
+    # Run the scriptblock
+    & $_ScriptBlock
+
+    # Complete logging (success)
+    Reset-CursorPosition {
+      $Host.UI.RawUI.CursorPosition = $lastCursorPosition
+      Write-Marker $_Style.CompletedMarker
+    }
+  }
+  catch {
+    # Complete logging (error)
+    Reset-CursorPosition {
+      $Host.UI.RawUI.CursorPosition = $lastCursorPosition
+      Write-Marker $_Style.ErrorMarker
+    }
+
+    # Re-throw the error
+    throw
+  }
+  finally {
+    # Decrement invocation depth
+    $script:invokeStepDepth--
+  }
+}

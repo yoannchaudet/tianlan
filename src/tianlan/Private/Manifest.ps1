@@ -96,18 +96,24 @@ function Get-EnvironmentDefinition {
 
   .PARAMETER SubscriptionId
   Subscription id.
+
+  .PARAMETER AdminGroupId
+  Admin group id.
   #>
 
   param (
     [Parameter(Mandatory)]
     [string] $Location,
     [Parameter(Mandatory)]
-    [string] $SubscriptionId
+    [string] $SubscriptionId,
+    [Parameter(Mandatory)]
+    [string] $AdminGroupId
   )
 
   return [pscustomobject] @{
     location       = $Location
     subscriptionId = $SubscriptionId
+    adminGroupId   = $AdminGroupId
   }
 }
 

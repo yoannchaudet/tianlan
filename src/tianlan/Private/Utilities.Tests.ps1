@@ -83,7 +83,7 @@ InModuleScope Tianlan {
       $robject.c2.d2.e2 | Should -Be @(1, 2)
       $object.c2.d2.e2 | Should -Be @(1, 2)
 
-      $robject = ($object | Add-Property 'c', 'd3', 'e3' -Value @{f3='test'})
+      $robject = ($object | Add-Property 'c', 'd3', 'e3' -Value @{f3 = 'test'})
       $robject.c.d3.e3.f3 | Should -Be 'test'
       $object.c.d3.e3.f3 | Should -Be 'test'
     }
@@ -115,7 +115,7 @@ InModuleScope Tianlan {
 
     It 'Serializes to JSON just fine' {
       $object = [pscustomobject] @{}
-      $robject = $object | Add-Property 'a','b' -Value 1
+      $robject = $object | Add-Property 'a', 'b' -Value 1
       $robject.a.b | Should -Be 1
       $object.a.b | Should -Be 1
       $object -is [pscustomobject] | Should -BeTrue
@@ -154,9 +154,9 @@ InModuleScope Tianlan {
     It 'Can return properties' {
       $x = @{}
       (Get-Property $x a, b) | Should -BeNullOrEmpty
-      $x = @{ a = 1; b = 2; c =3 }
+      $x = @{ a = 1; b = 2; c = 3 }
       (Get-Property $x -Properties) | ForEach-Object { @('a', 'b', 'c') | Should -Contain $_ }
-      $x = @{ a = @{ a1 = $null }; b = 2; c =3 }
+      $x = @{ a = @{ a1 = $null }; b = 2; c = 3 }
       (Get-Property $x 'a' -Properties) | Should -Be @('a1')
     }
   }
@@ -241,7 +241,7 @@ InModuleScope Tianlan {
         $test2 | Should -Be 'test2'
         $test3 | Should -Be 'test3'
         "test"
-      } -ScriptBlockArguments @('test1','test2','test3') -Extension '.pfx' | Should -Be "test"
+      } -ScriptBlockArguments @('test1', 'test2', 'test3') -Extension '.pfx' | Should -Be "test"
     }
   }
 
@@ -253,6 +253,35 @@ InModuleScope Tianlan {
       Get-CertificateName 'test123' | Should -Be 'Test-Certificate'
       Get-CertificateName 'test 1.2.3' | Should -Be 'Test-Certificate'
       Get-CertificateName 't e s t 1.2.3' | Should -Be 'Test-Certificate'
+    }
+  }
+
+  Describe 'Invoke-Step' {
+    It 'Passes through' {
+      Invoke-Step 'test' { 123 } | Should -Be 123
+      { Invoke-Step 'test' { throw 'x' } } | Should -Throw 'x'
+    }
+
+    It 'Logs steps properly' {
+      Mock 'Write-Host' {
+        $script:value += $Object
+        if (!$NoNewLine) { $script:value += "`n" }
+      }
+
+      # Success
+      $script:value = ''
+      Invoke-Step 'Test' {}
+      $script:value | Should -Be "[ ] Test`n[+] Test`n"
+
+      # Failure
+      $script:value = ''
+      { Invoke-Step 'Test2' { throw 'x' } } | Should -Throw 'x'
+      $script:value | Should -Be "[ ] Test2`n[!] Test2`n"
+
+      # Recursion
+      $script:value = ''
+      Invoke-Step 'Test' { Invoke-Step 'Sub-test' {} }
+      $script:value | Should -Be "[ ] Test`n  [ ] Sub-test`n  [+] Sub-test`n[+] Test`n"
     }
   }
 }

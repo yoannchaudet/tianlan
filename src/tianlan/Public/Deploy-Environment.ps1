@@ -13,19 +13,25 @@ function Deploy-Environment {
   )
 
   # Login
-  Connect-Azure -Environment $Name
+  Invoke-Step 'Authenticating' {
+    Connect-Azure -Environment $Name
+  }
 
   # Deploy the resources
   $context = Get-EnvironmentContext -Environment $Name
-  New-TemplateDeployment -Context $context
+  Invoke-Step 'Deploying resources' {
+    New-TemplateDeployment -Context $context
+  }
 
   # Import the certificates
-  $spNames = Get-Manifest 'environments', $Name, 'servicePrincipals' -DefaultValue @() -Properties -ThrowOnMiss
-  foreach ($spName in @($spNames)) {
-    $spDef = Get-Manifest 'environments', $Name, 'servicePrincipals', $spName
-    Import-Certificate `
-      -VaultName $context.Context.VaultName `
-      -Name $spDef.certificate.name `
-      -Thumbprint $spDef.certificate.thumbprint
+  Invoke-Step "Importing service principals' certificates" {
+    $spNames = Get-Manifest 'environments', $Name, 'servicePrincipals' -DefaultValue @() -Properties -ThrowOnMiss
+    foreach ($spName in @($spNames)) {
+      $spDef = Get-Manifest 'environments', $Name, 'servicePrincipals', $spName
+      Import-Certificate `
+        -VaultName $context.Context.VaultName `
+        -Name $spDef.certificate.name `
+        -Thumbprint $spDef.certificate.thumbprint
+    }
   }
 }

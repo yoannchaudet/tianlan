@@ -91,9 +91,10 @@ InModuleScope Tianlan {
 
       Describe 'Get-EnvironmentDefinition' {
         It 'Returns the proper definition' {
-          $definition = Get-EnvironmentDefinition -Location 'location' -SubscriptionId 'subscription id'
+          $definition = Get-EnvironmentDefinition -Location 'location' -SubscriptionId 'subscription id' -AdminGroupId 'admin id'
           $definition.location | Should -Be 'location'
           $definition.subscriptionId | Should -Be 'subscription id'
+          $definition.adminGroupId | Should -Be 'admin id'
         }
       }
 
