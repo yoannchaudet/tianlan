@@ -30,13 +30,16 @@ function New-DeploymentUnit {
     throw 'Deployment unit already exists'
   }
 
-  # Declare the environment
-  Write-Host 'Declaring deployment unit...' -ForegroundColor 'Blue'
-  $duDef = Get-DeploymentUnitDefinition -Location $Location
-  $manifest = Get-Manifest
-  $manifest = $manifest | Add-Property -Properties 'environments', $Environment, 'deploymentUnits', $Name -Value $duDef
-  Set-Manifest $manifest
+  # Declare the deployment unit
+  Invoke-Step 'Declaring deployment unit' {
+    # Get current manifest
+    $manifest = Get-Manifest
 
-  # Logging
-  Write-Host 'Deployment unit declared successfuly!'
+    # Declare deployment unit
+    $duDef = Get-DeploymentUnitDefinition -Location $Location
+    $manifest = $manifest | Add-Property -Properties 'environments', $Environment, 'deploymentUnits', $Name -Value $duDef
+
+    # Save manifest
+    Set-Manifest $manifest
+  }
 }

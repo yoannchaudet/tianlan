@@ -18,9 +18,13 @@ function Deploy-DeploymentUnit {
   )
 
   # Login
-  Connect-Azure -Environment $Environment
+  Invoke-Step 'Authenticating' {
+    Connect-Azure -Environment $Environment
+  }
 
   # Deploy the resources
-  $context = Get-DeploymentUnitContext -Environment $Environment -DeploymentUnit $Name
-  New-TemplateDeployment -Context $context
+  Invoke-Step 'Deploying resources' {
+    $context = Get-DeploymentUnitContext -Environment $Environment -DeploymentUnit $Name
+    New-TemplateDeployment -Context $context
+  }
 }

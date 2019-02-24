@@ -364,18 +364,17 @@ function Import-Certificate {
 
   # Upload the certificate if needed
   if ($uploadedCertificate -and $uploadedCertificate.Certificate.Thumbprint -eq $Thumbprint) {
-    Write-Host "[import-certificate] Certificate $Name already in key vault $VaultName"
+    Write-Host "Certificate $Name already in key vault ($VaultName)"
   }
   else {
-    Write-Host "[import-certificate] Uploading certificate $Name to `key vault $VaultName..." -ForegroundColor 'Blue'
-    $certificate = Get-Certificate -Thumbprint $Thumbprint
-    Invoke-Retry {
-      Import-AzKeyVaultCertificate `
-        -VaultName $VaultName `
-        -Name $Name `
-        -CertificateCollection $certificate
+    Invoke-Step "Uploading certificate $Name to key vault ($VaultName)" {
+      $certificate = Get-Certificate -Thumbprint $Thumbprint
+      Invoke-Retry {
+        Import-AzKeyVaultCertificate `
+          -VaultName $VaultName `
+          -Name $Name `
+          -CertificateCollection $certificate
+      }
     }
   }
-
-
 }
