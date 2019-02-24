@@ -3,12 +3,12 @@
 #
 
 class Context {
-  # Context name (either the environment or the deployment unit)
+  # Context name (either environment or stamp)
   [string] $Name
   # Environment
   [string] $Environment
-  # Deployment unit
-  [string] $DeploymentUnit
+  # Stamp
+  [string] $Stamp
   # Hash
   [string] $Hash
   # Key vault name
@@ -33,23 +33,23 @@ class DeploymentContext {
 function Get-VaultName() {
   <#
   .SYNOPSIS
-  Return the name of the environment's (or deployment unit's) key vault.
+  Return the name of the key vault for a given entity (environment/stamp).
 
   .PARAMETER Environment
   The environment name.
 
-  .PARAMETER DeploymentUnit
-  The deployment unit (if provided).
+  .PARAMETER Stamp
+  The stamp (if applicable).
   #>
 
   param (
     [Parameter(Mandatory)]
     [string] $Environment,
-    [string] $DeploymentUnit
+    [string] $Stamp
   )
 
-  if ($DeploymentUnit) {
-    $hash = Get-Hash "${Environment}_${DeploymentUnit}"
+  if ($Stamp) {
+    $hash = Get-Hash "${Environment}_${Stamp}"
   }
   else {
     $hash = Get-Hash $Environment
@@ -87,7 +87,7 @@ function Get-EnvironmentContext {
   return $ctx
 }
 
-function Get-DeploymentUnitContext() {
+function Get-StampContext() {
   <#
   .SYNOPSIS
   Return a deployment context.
@@ -95,31 +95,31 @@ function Get-DeploymentUnitContext() {
   .PARAMETER Environment
   The environment.
 
-  .PARAMETER DeploymentUnit
-  The deployment unit for which to return a context.
+  .PARAMETER Stamp
+  The stamp for which to return a context.
   #>
 
   param (
     [Parameter(Mandatory)]
     [string] $Environment,
     [Parameter(Mandatory)]
-    [string] $DeploymentUnit
+    [string] $Stamp
   )
 
-  # Get deployment unit definition
-  $duDef = Get-Manifest 'environments', $Environment, 'deploymentUnits', $DeploymentUnit -ThrowOnMiss
+  # Get stamp definition
+  $duDef = Get-Manifest 'environments', $Environment, 'stamps', $Stamp -ThrowOnMiss
 
   # Build the context object and return it
   $ctx = [DeploymentContext]::new()
   $ctx.TemplateName = '$KeyVault'
-  $ctx.ResourceGroup = "${Environment}_${DeploymentUnit}"
+  $ctx.ResourceGroup = "${Environment}_${Stamp}"
   $ctx.Location = $duDef.location
   $ctx.Context = [Context]::new()
-  $ctx.Context.Name = $DeploymentUnit
+  $ctx.Context.Name = $Stamp
   $ctx.Context.Environment = $Environment
-  $ctx.Context.DeploymentUnit = $DeploymentUnit
+  $ctx.Context.Stamp = $Stamp
   $ctx.Context.Hash = Get-Hash $ctx.ResourceGroup
-  $ctx.Context.VaultName = Get-VaultName -Environment $Environment -DeploymentUnit $DeploymentUnit
+  $ctx.Context.VaultName = Get-VaultName -Environment $Environment -Stamp $Stamp
   return $ctx
 }
 
@@ -132,7 +132,7 @@ function Get-DeploymentFile() {
   Return the path to a deployment file.
 
   Look in order at (most specific to least specific):
-  - path.deploymentunit.environment.extension
+  - path.stamp.environment.extension
   - path.environment.extension
   - path.extension (default file)
 
@@ -141,8 +141,8 @@ function Get-DeploymentFile() {
   .PARAMETER Environment
   The environment name.
 
-  .PARAMETER DeploymentUnit
-  The deployment unit name.
+  .PARAMETER Stamp
+  The stamp name.
 
   .PARAMETER Path
   The path to the file to look for.
@@ -154,7 +154,7 @@ function Get-DeploymentFile() {
   param (
     [Parameter(Mandatory)]
     [string] $Environment,
-    [string] $DeploymentUnit,
+    [string] $Stamp,
     [Parameter(Mandatory)]
     [string] $Path,
     [Parameter(Mandatory)]
@@ -163,8 +163,8 @@ function Get-DeploymentFile() {
 
   # Paths to try (in order)
   $paths = @()
-  if ($DeploymentUnit) {
-    $paths += "${Path}.${DeploymentUnit}.${Environment}.${Extension}"
+  if ($Stamp) {
+    $paths += "${Path}.${Stamp}.${Environment}.${Extension}"
   }
   $paths += "${Path}.${Environment}.${Extension}"
   $paths += "${Path}.${Extension}"
@@ -196,7 +196,7 @@ function Get-TemplateParameter {
   # Lookup the parameters file
   $parameterFile = Get-DeploymentFile `
     -Environment $Context.Context.Environment `
-    -DeploymentUnit $Context.Context.DeploymentUnit `
+    -Stamp $Context.Context.Stamp `
     -Path "Templates/$($Context.TemplateName)" `
     -Extension 'Parameters.json'
   if (!$parameterFile) {
@@ -264,7 +264,7 @@ function New-TemplateDeployment {
   # Lookup the template file
   $templateFile = Get-DeploymentFile `
     -Environment $Context.Context.Environment `
-    -DeploymentUnit $Context.Context.DeploymentUnit `
+    -Stamp $Context.Context.Stamp `
     -Path "Templates/$($Context.TemplateName)" `
     -Extension 'Template.json'
 

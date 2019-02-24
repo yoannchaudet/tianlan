@@ -1,16 +1,16 @@
-function New-DeploymentUnit {
+function New-Stamp {
   <#
   .SYNOPSIS
-  Declare a new deployment unit..
+  Declare a new stamp.
 
   .PARAMETER Environment
   The environment name.
 
   .PARAMETER Name
-  The deployment unit name.
+  The stamp name.
 
   .PARAMETER Location
-  The location where to provision the deployment unit.
+  The location where to provision the stamp.
   #>
 
   param (
@@ -22,22 +22,22 @@ function New-DeploymentUnit {
     [string] $Location
   )
 
-  # Make sure the environment exists and the deployment unit not already declared
+  # Make sure the environment exists and the stamp is not already declared
   if (!(Get-Manifest 'environments', $Environment)) {
     throw 'Environment does not exist'
   }
-  if (Get-Manifest 'environments', $Environment, 'deploymentUnits', $Name) {
-    throw 'Deployment unit already exists'
+  if (Get-Manifest 'environments', $Environment, 'stamps', $Name) {
+    throw 'Stamp already exists'
   }
 
-  # Declare the deployment unit
-  Invoke-Step 'Declaring deployment unit' {
+  # Declare the stamp
+  Invoke-Step 'Declaring stamp' {
     # Get current manifest
     $manifest = Get-Manifest
 
-    # Declare deployment unit
-    $duDef = Get-DeploymentUnitDefinition -Location $Location
-    $manifest = $manifest | Add-Property -Properties 'environments', $Environment, 'deploymentUnits', $Name -Value $duDef
+    # Declare stamp
+    $duDef = Get-StampDefinition -Location $Location
+    $manifest = $manifest | Add-Property -Properties 'environments', $Environment, 'stamps', $Name -Value $duDef
 
     # Save manifest
     Set-Manifest $manifest

@@ -98,9 +98,9 @@ InModuleScope Tianlan {
         }
       }
 
-      Describe 'Get-DeploymentUnitDefinition' {
+      Describe 'Get-StampDefinition' {
         It 'Returns the proper definition' {
-          $definition = Get-DeploymentUnitDefinition -Location 'location'
+          $definition = Get-StampDefinition -Location 'location'
           $definition.location | Should -Be 'location'
         }
       }

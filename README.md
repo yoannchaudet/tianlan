@@ -28,7 +28,7 @@ Until the project is published to the gallery, install dependencies this way:
 
 Tiānlán is packaged as a PowerShell module which exposes a single function: `Invoke-Tianlan`.
 
-The function starts a dedicated PowerShell Core shell (either in your host or in a container) which exposes a different
+The function starts a dedicated PowerShell Core shell (either on your host or in a container) which exposes a different
 PowerShell module with all the functionalities of Tiānlán. This indirection is aimed at keeping things clean and tidy.
 
 In order to start the shell (from the root of the repository):
@@ -67,14 +67,14 @@ Create the environment first, this step shall run once only:
 
 ```pwsh
 # You will be prompted for the other parameters
-New-Environment -Name test
+New-Environment -Name dev
 ```
 
 If you are planning to deploy an [AKS cluster](https://docs.microsoft.com/en-us/azure/aks/), also create an extra
 service principal:
 
 ```pwsh
-New-ServicePrincipal -Environment test -Name aksAdmin
+New-ServicePrincipal -Environment dev -Name aksAdmin
 ```
 
 You should see a new `Manifest.json` file at the root of your repository/deployment path. This is keeping track of what
@@ -83,7 +83,7 @@ you will be deploying and where. It is a good idea to version control this file.
 Provision your environment with:
 
 ```pwsh
-Deploy-Environment -Name test
+Deploy-Environment -Name dev
 ```
 
 This script is idempotent (you can run it any time you make a change to the environment). This will provision a Key

@@ -4,12 +4,12 @@
   "type": "object",
   "definitions": {
     "certificate": {
-      "description": "A certificate stored in a Key Vault.",
+      "description": "A certificate stored in Key Vault.",
       "type": "object",
       "properties": {
         "name": {
           "type": "string",
-          "description": "Name of the certificate (in Key Vault)."
+          "description": "Name of the certificate."
         },
         "thumbprint": {
           "type": "string",
@@ -22,8 +22,8 @@
         "thumbprint"
       ]
     },
-    "deploymentUnit": {
-      "description": "Deployment unit.",
+    "stamp": {
+      "description": "A stamp definition.",
       "type": "object",
       "properties": {
         "location": {
@@ -36,7 +36,7 @@
       "additionalProperties": false
     },
     "environment": {
-      "description": "Environment definition (e.g. dev, staging, production).",
+      "description": "An environment definition (e.g. dev, staging, production).",
       "type": "object",
       "properties": {
         "location": {
@@ -68,12 +68,12 @@
             "admin"
           ]
         },
-        "deploymentUnits": {
-          "description": "Deployment units in the environment.",
+        "stamps": {
+          "description": "Stamps in the environment.",
           "type": "object",
           "patternProperties": {
             "^[a-zA-Z0-9\\-\\.]{1,32}$": {
-              "$ref": "#/definitions/deploymentUnit"
+              "$ref": "#/definitions/stamp"
             }
           },
           "minProperties": 1,

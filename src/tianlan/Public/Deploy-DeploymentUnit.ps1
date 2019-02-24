@@ -1,13 +1,13 @@
-function Deploy-DeploymentUnit {
+function Deploy-Stamp {
   <#
   .SYNOPSIS
-  Deploy a deployment unit..
+  Deploy a stamp.
 
   .PARAMETER Environment
   The environment.
 
   .PARAMETER Name
-  The deployment unit name.
+  The stamp name.
   #>
 
   param (
@@ -24,7 +24,7 @@ function Deploy-DeploymentUnit {
 
   # Deploy the resources
   Invoke-Step 'Deploying resources' {
-    $context = Get-DeploymentUnitContext -Environment $Environment -DeploymentUnit $Name
+    $context = Get-StampContext -Environment $Environment -Stamp $Name
     New-TemplateDeployment -Context $context
   }
 }

@@ -7,7 +7,7 @@ InModuleScope Tianlan {
     Describe 'Get-VaultName' {
       It 'Returns a hashed value' {
         Get-VaultName -Environment 'test' | Should -Be 'vaulta94a8fe5cc'
-        Get-VaultName -Environment 'test' -DeploymentUnit 'test' | Should -Be 'vault4d233e1542'
+        Get-VaultName -Environment 'test' -Stamp 'test' | Should -Be 'vault4d233e1542'
       }
     }
 
@@ -30,22 +30,22 @@ InModuleScope Tianlan {
         $ctx.Location | Should -Be 'location'
         $ctx.Context.Name | Should -Be 'test'
         $ctx.Context.Environment | Should -Be 'test'
-        $ctx.Context.DeploymentUnit | Should -BeNullOrEmpty
+        $ctx.Context.Stamp | Should -BeNullOrEmpty
         $ctx.Context.Hash | Should -Be 'a94a8fe5cc'
         $ctx.Context.VaultName | Should -Be 'vaulta94a8fe5cc'
       }
     }
 
-    Describe 'Get-DeploymentUnitContext' {
-      It 'Returns deployment unit context' {
-        { Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'du' } | Should -Throw
+    Describe 'Get-StampContext' {
+      It 'Returns stamp context' {
+        { Get-StampContext -Environment 'env' -Stamp 'du' } | Should -Throw
         Set-Manifest @"
         {
           "environments": {
             "env": {
               "subscriptionId": "subscription id",
               "location": "location",
-              "deploymentUnits": {
+              "stamps": {
                 "du": {
                   "location": "du location"
                 }
@@ -54,14 +54,14 @@ InModuleScope Tianlan {
           }
         }
 "@
-        { Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'bad du' } | Should -Throw
-        $ctx = Get-DeploymentUnitContext -Environment 'env' -DeploymentUnit 'du'
+        { Get-StampContext -Environment 'env' -Stamp 'bad du' } | Should -Throw
+        $ctx = Get-StampContext -Environment 'env' -Stamp 'du'
         $ctx.TemplateName | Should -Be '$KeyVault'
         $ctx.ResourceGroup | Should -Be 'env_du'
         $ctx.Location | Should -Be 'du location'
         $ctx.Context.Name | Should -Be 'du'
         $ctx.Context.Environment | Should -Be 'env'
-        $ctx.Context.DeploymentUnit | Should -Be 'du'
+        $ctx.Context.Stamp | Should -Be 'du'
         $ctx.Context.Hash | Should -Be '8200331830'
         $ctx.Context.VaultName | Should -Be 'vault8200331830'
       }
@@ -86,17 +86,17 @@ InModuleScope Tianlan {
           -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.env.Template.json'))
         Get-DeploymentFile `
           -Environment 'env' `
-          -DeploymentUnit 'du' `
+          -Stamp 'du' `
           -Path 'Templates/X' `
           -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.du.env.Template.json'))
         Get-DeploymentFile `
           -Environment 'env' `
-          -DeploymentUnit 'baddu' `
+          -Stamp 'baddu' `
           -Path 'Templates/X' `
           -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.env.Template.json'))
         Get-DeploymentFile `
           -Environment 'badenv' `
-          -DeploymentUnit 'du' `
+          -Stamp 'du' `
           -Path 'Templates/X' `
           -Extension 'Template.json' | Should -Be ((Join-Path (Get-DeploymentPath) 'Templates/X.Template.json'))
         Get-DeploymentFile `

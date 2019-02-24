@@ -117,10 +117,10 @@ function Get-EnvironmentDefinition {
   }
 }
 
-function Get-DeploymentUnitDefinition {
+function Get-StampDefinition {
   <#
   .SYNOPSIS
-  Return a deployment unit definition.
+  Return a stamp definition.
 
   .PARAMETER Location
   Location.

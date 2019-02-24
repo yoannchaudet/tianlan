@@ -72,8 +72,8 @@
   FunctionsToExport    = @(
     'Import-Tianlan',
     'Get-DeploymentPath', 'Set-DeploymentPath',
-    'New-Environment', 'New-DeploymentUnit',
-    'Deploy-Environment', 'Deploy-DeploymentUnit',
+    'New-Environment', 'New-Stamp',
+    'Deploy-Environment', 'Deploy-Stamp',
     'New-ServicePrincipal'
   )
 
