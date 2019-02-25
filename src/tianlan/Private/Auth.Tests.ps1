@@ -189,26 +189,116 @@ InModuleScope Tianlan {
     }
   }
 
-  Describe 'New-Certificate, Get-Certificate, Remove-Certificate' {
-    It 'Generates/gets/removes certificates' {
-      # Try to create a new cert
-      $certificate = New-Certificate -CommonName 'test'
-      try {
-        $certificate | Should -Not -BeNull
+  function Use-LocalCertificate {
+    <#
+    .SYNOPSIS
+    Test helper: execute a script block in the context of a local certificate.
+    #>
 
+    param (
+      [Parameter(Mandatory)]
+      [scriptblock] $ScriptBlock
+    )
+
+    # Create a certificate
+    $certificate = New-LocalCertificate -CommonName 'test'
+    try {
+      # Make sure the certificate was created
+      $certificate | Should -Not -BeNull
+
+      # Call the script block
+      & $ScriptBlock
+    }
+    finally {
+      # Remove the certificate
+      Remove-LocalCertificate $certificate.Thumbprint | Should -BeTrue
+    }
+  }
+
+  Describe 'New-LocalCertificate, Get-LocalCertificate, Remove-LocalCertificate' {
+    It 'Generates/gets/removes certificates' {
+      Use-LocalCertificate {
         # Get an invalid cert
-        Get-Certificate 'x' | Should -BeNull
-        Remove-Certificate 'x' | Should -BeFalse
+        Get-LocalCertificate 'x' | Should -BeNull
+        Remove-LocalCertificate 'x' | Should -BeFalse
 
         # Try to retrieve valid cert
-        $certificate2 = Get-Certificate -Thumbprint $certificate.Thumbprint
+        $certificate2 = Get-LocalCertificate -Thumbprint $certificate.Thumbprint
         $certificate2.Thumbprint | Should -Be $certificate.Thumbprint
         $certificate2.SubjectName.Name | Should -Be $certificate.SubjectName.Name
         $certificate2.HasPrivateKey | Should -Be $true
       }
-      finally {
-        # Try to remove the certificate
-        Remove-Certificate $certificate.Thumbprint | Should -BeTrue
+    }
+  }
+
+  Describe 'Import-Certificate' {
+    It 'Imports certificate only if not already in Key Vault' {
+      Use-LocalCertificate {
+        Mock 'Get-AzKeyVaultCertificate' {
+          @{
+            Certificate = @{
+              Thumbprint = $certificate.Thumbprint
+            }
+          }
+        }
+        Mock 'Import-AzKeyVaultCertificate' {}
+        Import-Certificate `
+          -VaultName 'vault' `
+          -Name 'name' `
+          -Thumbprint $certificate.Thumbprint
+        Assert-MockCalled 'Get-AzKeyVaultCertificate' -Times 1
+        Assert-MockCalled 'Import-AzKeyVaultCertificate' -Times 0
+      }
+    }
+
+    It 'Imports certificate if needed' {
+      Use-LocalCertificate {
+        Mock 'Get-AzKeyVaultCertificate' {}
+        Mock 'Import-AzKeyVaultCertificate' `
+          -ParameterFilter { $VaultName -eq 'vault' -and $Name -eq 'name' -and $CertificateCollection -eq $certificate } `
+          -MockWith {}
+        Import-Certificate `
+          -VaultName 'vault' `
+          -Name 'name' `
+          -Thumbprint $certificate.Thumbprint
+        Assert-MockCalled 'Get-AzKeyVaultCertificate' -Times 1
+        Assert-MockCalled 'Import-AzKeyVaultCertificate' -Times 1
+      }
+    }
+  }
+
+  Describe 'Export-Certificate' {
+    It 'Exports only if not already in certstore' {
+      Use-LocalCertificate {
+        Mock 'Get-AzKeyVaultSecret' {}
+        Export-Certificate -VaultName 'vault' -Name 'name' -Thumbprint $certificate.Thumbprint
+        Assert-MockCalled 'Get-AzKeyVaultSecret' -Times 0
+      }
+    }
+
+    It 'Validates content type' {
+      Use-LocalCertificate {
+        Mock 'Get-AzKeyVaultSecret' {
+          @{
+            ContentType = 'invalid-content-type'
+          }
+        }
+        { Export-Certificate -VaultName 'vault' -Name 'name' -Thumbprint 'some-thumbprint' } | Should -Throw 'Unexpected content type'
+      }
+    }
+
+    It 'Exports certificate if needed' {
+      Use-LocalCertificate {
+        Mock 'Get-AzKeyVaultSecret' {
+          @{
+            ContentType = 'application/x-pkcs12'
+            SecretValueText = [System.Convert]::ToBase64String($certificate.RawData)
+          }
+        }
+        Remove-LocalCertificate $certificate.Thumbprint | Should -BeTrue
+        Export-Certificate -VaultName 'vault' -Name 'name' -Thumbprint $certificate.Thumbprint
+        Assert-MockCalled 'Get-AzKeyVaultSecret' -Times 1
+        Get-LocalCertificate $certificate.Thumbprint | Should -Be $certificate
       }
     }
   }

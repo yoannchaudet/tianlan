@@ -241,6 +241,7 @@ function Use-TemporaryFile {
   .PARAMETER DontRemoveFile
   Switch indicating if the file should be removed right away or not.
   #>
+
   param (
     [Parameter(Mandatory)]
     [scriptblock] $ScriptBlock,

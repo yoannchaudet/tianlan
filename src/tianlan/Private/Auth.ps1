@@ -101,7 +101,7 @@ function New-RandomPassword {
   return $password
 }
 
-function New-Certificate {
+function New-LocalCertificate {
   <#
   .SYNOPSIS
   Generate a new self-signed certificate.
@@ -154,7 +154,7 @@ function New-Certificate {
   } -Extension '.pfx'
 }
 
-function Get-Certificate {
+function Get-LocalCertificate {
   <#
   .SYNOPSIS
   Return a certificate (from the certstore) by thumbprint.
@@ -184,7 +184,7 @@ function Get-Certificate {
   }
 }
 
-function Remove-Certificate {
+function Remove-LocalCertificate {
   <#
   .SYNOPSIS
   Remove a certificate (from the certstore) by thumbprint.
@@ -201,7 +201,7 @@ function Remove-Certificate {
   )
 
   # Get the certificate
-  $certificate = Get-Certificate $Thumbprint
+  $certificate = Get-LocalCertificate $Thumbprint
   if (!$certificate) {
     return $false
   }
@@ -248,7 +248,7 @@ function New-AdServicePrincipal {
   )
 
   # Create a new certificate
-  $certificate = New-Certificate -CommonName $DisplayName
+  $certificate = New-LocalCertificate -CommonName $DisplayName
 
   # Create an application first
   $application = Invoke-Retry {
@@ -367,8 +367,8 @@ function Import-Certificate {
     Write-Host "Certificate $Name already in key vault ($VaultName)"
   }
   else {
-    Invoke-Step "Uploading certificate $Name to key vault ($VaultName)" {
-      $certificate = Get-Certificate -Thumbprint $Thumbprint
+    Invoke-Step "Importing certificate $Name into key vault ($VaultName)" {
+      $certificate = Get-LocalCertificate -Thumbprint $Thumbprint
       Invoke-Retry {
         Import-AzKeyVaultCertificate `
           -VaultName $VaultName `
@@ -376,5 +376,59 @@ function Import-Certificate {
           -CertificateCollection $certificate
       }
     }
+  }
+}
+
+function Export-Certificate {
+  <#
+  .SYNOPSIS
+  Export a certificate out of Key Vault (if needed) and place it in the local certstore.
+
+  .PARAMETER VaultName
+  The name of the vault.
+
+  .PARAMETER Name
+  The name of the certificate.
+
+  .PARAMETER Thumbprint
+  The certificate thumbprint.
+  #>
+
+  param (
+    [Parameter(Mandatory)]
+    [string] $VaultName,
+    [Parameter(Mandatory)]
+    [string] $Name,
+    [Parameter(Mandatory)]
+    [string] $Thumbprint
+  )
+
+  # If the certificate is already in the certstore, ignore
+  if (Get-LocalCertificate -Thumbprint $Thumbprint) {
+    Write-Host "Certificate $Name already in local certstore"
+    return
+  }
+
+  # Export the certificate out of keyvault
+  Invoke-Step "Exporting certificate $Name from key vault ($VaultName)" {
+    # Read certificate's matching secret
+    $secret = Invoke-Retry {
+      Get-AzKeyVaultSecret -VaultName $VaultName -Name $Name
+    }
+
+    # Validate content type (should not hurt)
+    if ($secret.ContentType -ne 'application/x-pkcs12') {
+      throw 'Unexpected content type'
+    }
+
+    # Add the certificate to the certstore
+    $storeName = [System.Security.Cryptography.X509Certificates.StoreName]
+    $storeLocation = [System.Security.Cryptography.X509Certificates.StoreLocation]
+    $openFlags = [System.Security.Cryptography.X509Certificates.OpenFlags]
+    $x509Certificate2 = [System.Security.Cryptography.X509Certificates.X509Certificate2]
+    $store = [System.Security.Cryptography.X509Certificates.X509Store]::new($storeName::My, $storeLocation::CurrentUser)
+    $store.Open($openFlags::ReadWrite)
+    $store.Add($x509Certificate2::New([System.Convert]::FromBase64String($secret.SecretValueText), '', [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::Exportable -bor [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::PersistKeySet))
+    $store.Close()
   }
 }
