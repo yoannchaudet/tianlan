@@ -87,6 +87,9 @@ function Invoke-Tianlan {
   }
   else {
     $env:Command = ''
+
+    # Clear the console (this will make sure Invoke-Step properly work with the current host)
+    Clear-Host
   }
 
   # Invoke the requested mode
