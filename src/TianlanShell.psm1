@@ -88,8 +88,11 @@ function Invoke-Tianlan {
   else {
     $env:Command = ''
 
-    # Clear the console (this will make sure Invoke-Step properly work with the current host)
-    Clear-Host
+    # On non-Windows hosts, clear the console when running an interactive shell
+    # This will help Invoke-Step properly handle the cursor
+    if (!$IsWindows) {
+      Clear-Host
+    }
   }
 
   # Invoke the requested mode
