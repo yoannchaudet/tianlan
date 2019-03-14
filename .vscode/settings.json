@@ -6,5 +6,9 @@
   "files.trimTrailingWhitespace": true,
   "search.exclude": {
     "src/tianlan/Dependencies": true
+  },
+  "files.exclude": {
+    ".vscode": true,
+    ".gitattributes": true
   }
 }
